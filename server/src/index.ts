@@ -8,7 +8,7 @@ http.createServer(app).listen(port, (err) => {
     return console.log(err);
   }
 
-  return console.log(`server is listening on ${port}`)
+  return console.log(`server is listening on ${port} ${process.env.NODE_ENV}`)
 })
 
 export let server = app;

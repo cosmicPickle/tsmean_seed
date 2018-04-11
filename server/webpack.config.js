@@ -15,7 +15,7 @@ module.exports = {
     devtool: '#source-map',
     entry: {
         app: [
-            './src/index.ts',
+            './server/src/index.ts',
         ]
     },
     plugins: [],
