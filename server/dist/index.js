@@ -134,6 +134,24 @@ exports.default = exports.mongoConfig;
 
 /***/ }),
 
+/***/ "./server/src/configuration/general.ts":
+/*!*********************************************!*\
+  !*** ./server/src/configuration/general.ts ***!
+  \*********************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const config = {
+    jwtSecret: 'dhf3F87lPdPO0LkH5671MMd'
+};
+exports.default = config;
+
+
+/***/ }),
+
 /***/ "./server/src/configuration/middlewares/middlewaresConfig.ts":
 /*!*******************************************************************!*\
   !*** ./server/src/configuration/middlewares/middlewaresConfig.ts ***!
@@ -146,14 +164,14 @@ exports.default = exports.mongoConfig;
 Object.defineProperty(exports, "__esModule", { value: true });
 const bodyParser = __webpack_require__(/*! body-parser */ "body-parser");
 const AppLoggerMiddleware_1 = __webpack_require__(/*! ./../../middlewares/AppLoggerMiddleware */ "./server/src/middlewares/AppLoggerMiddleware.ts");
+const AppAuthenticateMiddleware_1 = __webpack_require__(/*! ./../../middlewares/AppAuthenticateMiddleware */ "./server/src/middlewares/AppAuthenticateMiddleware.ts");
 exports.middlewares = {
     _: [
         bodyParser.urlencoded({ extended: false }),
-        bodyParser.json(),
-        AppLoggerMiddleware_1.appLoggerMiddleware.log
+        bodyParser.json()
     ],
     '/user/:name?': {
-        get: [AppLoggerMiddleware_1.appLoggerMiddleware.log]
+        get: [AppLoggerMiddleware_1.appLoggerMiddleware.log, AppAuthenticateMiddleware_1.appAuthenticateMiddleware.check]
     }
 };
 exports.default = exports.middlewares;
@@ -359,6 +377,30 @@ exports.default = AppRoutesRegistry;
 
 /***/ }),
 
+/***/ "./server/src/errors/AppAuthorizationError.ts":
+/*!****************************************************!*\
+  !*** ./server/src/errors/AppAuthorizationError.ts ***!
+  \****************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const AppError_1 = __webpack_require__(/*! ../core/errors/AppError */ "./server/src/core/errors/AppError.ts");
+class AppAuthorizationError extends AppError_1.AppError {
+    constructor() {
+        super(...arguments);
+        this.code = 1003;
+        this.message = "You are not authorized to see this content.";
+    }
+}
+exports.AppAuthorizationError = AppAuthorizationError;
+exports.appAuthorizationError = new AppAuthorizationError();
+
+
+/***/ }),
+
 /***/ "./server/src/errors/AppInvalidRouteError.ts":
 /*!***************************************************!*\
   !*** ./server/src/errors/AppInvalidRouteError.ts ***!
@@ -451,6 +493,43 @@ http.createServer(App_1.default).listen(port, (err) => {
     return console.log(`server is listening on ${port} ${"development"}`);
 });
 exports.server = App_1.default;
+
+
+/***/ }),
+
+/***/ "./server/src/middlewares/AppAuthenticateMiddleware.ts":
+/*!*************************************************************!*\
+  !*** ./server/src/middlewares/AppAuthenticateMiddleware.ts ***!
+  \*************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const AppAuthorizationError_1 = __webpack_require__(/*! ../errors/AppAuthorizationError */ "./server/src/errors/AppAuthorizationError.ts");
+const jwt = __webpack_require__(/*! jsonwebtoken */ "jsonwebtoken");
+const general_1 = __webpack_require__(/*! ./../configuration/general */ "./server/src/configuration/general.ts");
+class AppAuthenticateMiddleware {
+    constructor() {
+        this.check = (req, res, next) => {
+            // check header or url parameters or post parameters for token
+            var token = req.body.token || req.query.token || req.headers['x-access-token'];
+            if (!token) {
+                return res.json(new AppAuthorizationError_1.AppAuthorizationError().get());
+            }
+            jwt.verify(token, general_1.default.jwtSecret, (err, decoded) => {
+                if (err) {
+                    return res.json(new AppAuthorizationError_1.AppAuthorizationError().get());
+                }
+                req.body.__djwt = decoded;
+                return next();
+            });
+        };
+    }
+}
+exports.AppAuthenticateMiddleware = AppAuthenticateMiddleware;
+exports.appAuthenticateMiddleware = new AppAuthenticateMiddleware();
 
 
 /***/ }),
@@ -668,6 +747,17 @@ module.exports = require("express");
 /***/ (function(module, exports) {
 
 module.exports = require("http");
+
+/***/ }),
+
+/***/ "jsonwebtoken":
+/*!*******************************!*\
+  !*** external "jsonwebtoken" ***!
+  \*******************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = require("jsonwebtoken");
 
 /***/ }),
 

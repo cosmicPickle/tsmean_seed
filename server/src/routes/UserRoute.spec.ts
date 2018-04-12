@@ -9,6 +9,7 @@ import { User } from '../models/db/mongo/UserModel';
 import { appUnknownUserError } from '../errors/AppUnknownUserError';
 import { appMongoError } from '../errors/AppMongoError';
 import { appLoggerMiddleware } from '../middlewares/AppLoggerMiddleware';
+import { appAuthenticateMiddleware } from '../middlewares/AppAuthenticateMiddleware';
 
 describe('class UserRoute', () => {
 
@@ -21,7 +22,7 @@ describe('class UserRoute', () => {
         let router = Router();
         let routerGetStub = sinon.stub(router, 'get');
         let path = '/user/:name?';
-        let middlewares = [appLoggerMiddleware.log]
+        let middlewares = [appLoggerMiddleware.log, appAuthenticateMiddleware.check];
         
         userRoute.mountMiddlewares(router);
 

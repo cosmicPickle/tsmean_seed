@@ -1,5 +1,4 @@
 import { AppMiddlewareFunction } from "../core/middlewares/AppMiddleware";
-import { Request, Response, NextFunction } from "express";
 
 export class AppLoggerMiddleware {
     log: AppMiddlewareFunction  = (req, res, next)  => {

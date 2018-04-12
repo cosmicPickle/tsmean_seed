@@ -1,15 +1,15 @@
 import * as bodyParser from 'body-parser';
 import { AppMiddlewares } from './../../core/middlewares/AppMiddleware';
 import { appLoggerMiddleware } from './../../middlewares/AppLoggerMiddleware';
+import { appAuthenticateMiddleware } from './../../middlewares/AppAuthenticateMiddleware';
 
 export const middlewares: AppMiddlewares= {
     _: [
         bodyParser.urlencoded({ extended: false }),
-        bodyParser.json(),
-        appLoggerMiddleware.log
+        bodyParser.json()
     ],
     '/user/:name?': {
-        get: [appLoggerMiddleware.log]
+        get: [appLoggerMiddleware.log, appAuthenticateMiddleware.check]
     }
 };
 

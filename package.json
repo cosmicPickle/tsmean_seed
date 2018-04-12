@@ -53,7 +53,8 @@
     ],
     "exclude": [
       "**/*.spec.ts",
-      "server/src/configuration"
+      "server/src/configuration",
+      "server/src/index.ts"
     ],
     "reporter": [
       "html"
