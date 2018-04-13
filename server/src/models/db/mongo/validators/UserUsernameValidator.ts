@@ -1,4 +1,4 @@
-import BaseValidator from "../../../../core/db/mongo/validators/BaseValidator";
+import BaseValidator from "../../../../core/models/db/mongo/validators/BaseValidator";
 
 export class UserUsernameValidator extends BaseValidator {
     message = "error_validation_user_username"

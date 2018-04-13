@@ -134,24 +134,6 @@ exports.default = exports.mongoConfig;
 
 /***/ }),
 
-/***/ "./server/src/configuration/general.ts":
-/*!*********************************************!*\
-  !*** ./server/src/configuration/general.ts ***!
-  \*********************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const config = {
-    jwtSecret: 'dhf3F87lPdPO0LkH5671MMd'
-};
-exports.default = config;
-
-
-/***/ }),
-
 /***/ "./server/src/configuration/middlewares/middlewaresConfig.ts":
 /*!*******************************************************************!*\
   !*** ./server/src/configuration/middlewares/middlewaresConfig.ts ***!
@@ -164,14 +146,15 @@ exports.default = config;
 Object.defineProperty(exports, "__esModule", { value: true });
 const bodyParser = __webpack_require__(/*! body-parser */ "body-parser");
 const AppLoggerMiddleware_1 = __webpack_require__(/*! ./../../middlewares/AppLoggerMiddleware */ "./server/src/middlewares/AppLoggerMiddleware.ts");
-const AppAuthenticateMiddleware_1 = __webpack_require__(/*! ./../../middlewares/AppAuthenticateMiddleware */ "./server/src/middlewares/AppAuthenticateMiddleware.ts");
 exports.middlewares = {
     _: [
         bodyParser.urlencoded({ extended: false }),
         bodyParser.json()
     ],
     '/user/:name?': {
-        get: [AppLoggerMiddleware_1.appLoggerMiddleware.log, AppAuthenticateMiddleware_1.appAuthenticateMiddleware.check]
+        get: [
+            AppLoggerMiddleware_1.appLoggerMiddleware.log,
+        ]
     }
 };
 exports.default = exports.middlewares;
@@ -190,86 +173,14 @@ exports.default = exports.middlewares;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const UserRoute_1 = __webpack_require__(/*! ./../../routes/UserRoute */ "./server/src/routes/UserRoute.ts");
+const GroupRoute_1 = __webpack_require__(/*! ./../../routes/GroupRoute */ "./server/src/routes/GroupRoute.ts");
 const DefaultRoute_1 = __webpack_require__(/*! ./../../routes/DefaultRoute */ "./server/src/routes/DefaultRoute.ts");
 exports.routesConfig = [
     DefaultRoute_1.defaultRoute,
-    UserRoute_1.userRoute
+    UserRoute_1.userRoute,
+    GroupRoute_1.groupRoute
 ];
 exports.default = exports.routesConfig;
-
-
-/***/ }),
-
-/***/ "./server/src/core/db/mongo/BaseModel.ts":
-/*!***********************************************!*\
-  !*** ./server/src/core/db/mongo/BaseModel.ts ***!
-  \***********************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
-const connection_1 = __webpack_require__(/*! ./connection */ "./server/src/core/db/mongo/connection.ts");
-class BaseModel {
-    model() {
-        this.schema = new mongoose_1.Schema(this._schema);
-        this.schema.methods = this._methods;
-        return connection_1.mongoose.model(this._name, this.schema);
-    }
-}
-exports.BaseModel = BaseModel;
-exports.default = BaseModel;
-
-
-/***/ }),
-
-/***/ "./server/src/core/db/mongo/connection.ts":
-/*!************************************************!*\
-  !*** ./server/src/core/db/mongo/connection.ts ***!
-  \************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const mongoose = __webpack_require__(/*! mongoose */ "mongoose");
-exports.mongoose = mongoose;
-const mongo_1 = __webpack_require__(/*! ./../../../configuration/db/mongo */ "./server/src/configuration/db/mongo.ts");
-const connect = `mongodb://${mongo_1.mongoConfig.user}:${mongo_1.mongoConfig.password}@${mongo_1.mongoConfig.host}`;
-mongoose.connect(connect);
-
-
-/***/ }),
-
-/***/ "./server/src/core/db/mongo/validators/BaseValidator.ts":
-/*!**************************************************************!*\
-  !*** ./server/src/core/db/mongo/validators/BaseValidator.ts ***!
-  \**************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-class BaseValidator {
-    constructor() {
-        this.message = 'BaseValidator default message. Should not be seeing this.';
-    }
-    validator(v) {
-        return true;
-    }
-    use() {
-        let v = {
-            validator: this.validator,
-            message: this.message
-        };
-        return v;
-    }
-}
-exports.default = BaseValidator;
 
 
 /***/ }),
@@ -294,6 +205,80 @@ class AppError {
 }
 exports.AppError = AppError;
 exports.default = AppError;
+
+
+/***/ }),
+
+/***/ "./server/src/core/models/db/mongo/BaseModel.ts":
+/*!******************************************************!*\
+  !*** ./server/src/core/models/db/mongo/BaseModel.ts ***!
+  \******************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
+const connection_1 = __webpack_require__(/*! ./connection */ "./server/src/core/models/db/mongo/connection.ts");
+class BaseModel {
+    model() {
+        this.schema = new mongoose_1.Schema(this._schema);
+        this.schema.methods = this._methods;
+        return connection_1.mongoose.model(this._name, this.schema);
+    }
+}
+exports.BaseModel = BaseModel;
+exports.default = BaseModel;
+
+
+/***/ }),
+
+/***/ "./server/src/core/models/db/mongo/connection.ts":
+/*!*******************************************************!*\
+  !*** ./server/src/core/models/db/mongo/connection.ts ***!
+  \*******************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const mongoose = __webpack_require__(/*! mongoose */ "mongoose");
+exports.mongoose = mongoose;
+const mongo_1 = __webpack_require__(/*! ./../../../../configuration/db/mongo */ "./server/src/configuration/db/mongo.ts");
+const connect = `mongodb://${mongo_1.mongoConfig.user}:${mongo_1.mongoConfig.password}@${mongo_1.mongoConfig.host}`;
+mongoose.connect(connect);
+
+
+/***/ }),
+
+/***/ "./server/src/core/models/db/mongo/validators/BaseValidator.ts":
+/*!*********************************************************************!*\
+  !*** ./server/src/core/models/db/mongo/validators/BaseValidator.ts ***!
+  \*********************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+class BaseValidator {
+    constructor() {
+        this.message = 'BaseValidator default message. Should not be seeing this.';
+    }
+    validator(v) {
+        return true;
+    }
+    use() {
+        let v = {
+            validator: this.validator,
+            message: this.message
+        };
+        return v;
+    }
+}
+exports.default = BaseValidator;
 
 
 /***/ }),
@@ -373,30 +358,6 @@ class AppRoutesRegistry {
 }
 exports.AppRoutesRegistry = AppRoutesRegistry;
 exports.default = AppRoutesRegistry;
-
-
-/***/ }),
-
-/***/ "./server/src/errors/AppAuthorizationError.ts":
-/*!****************************************************!*\
-  !*** ./server/src/errors/AppAuthorizationError.ts ***!
-  \****************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const AppError_1 = __webpack_require__(/*! ../core/errors/AppError */ "./server/src/core/errors/AppError.ts");
-class AppAuthorizationError extends AppError_1.AppError {
-    constructor() {
-        super(...arguments);
-        this.code = 1003;
-        this.message = "You are not authorized to see this content.";
-    }
-}
-exports.AppAuthorizationError = AppAuthorizationError;
-exports.appAuthorizationError = new AppAuthorizationError();
 
 
 /***/ }),
@@ -497,43 +458,6 @@ exports.server = App_1.default;
 
 /***/ }),
 
-/***/ "./server/src/middlewares/AppAuthenticateMiddleware.ts":
-/*!*************************************************************!*\
-  !*** ./server/src/middlewares/AppAuthenticateMiddleware.ts ***!
-  \*************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const AppAuthorizationError_1 = __webpack_require__(/*! ../errors/AppAuthorizationError */ "./server/src/errors/AppAuthorizationError.ts");
-const jwt = __webpack_require__(/*! jsonwebtoken */ "jsonwebtoken");
-const general_1 = __webpack_require__(/*! ./../configuration/general */ "./server/src/configuration/general.ts");
-class AppAuthenticateMiddleware {
-    constructor() {
-        this.check = (req, res, next) => {
-            // check header or url parameters or post parameters for token
-            var token = req.body.token || req.query.token || req.headers['x-access-token'];
-            if (!token) {
-                return res.json(new AppAuthorizationError_1.AppAuthorizationError().get());
-            }
-            jwt.verify(token, general_1.default.jwtSecret, (err, decoded) => {
-                if (err) {
-                    return res.json(new AppAuthorizationError_1.AppAuthorizationError().get());
-                }
-                req.body.__djwt = decoded;
-                return next();
-            });
-        };
-    }
-}
-exports.AppAuthenticateMiddleware = AppAuthenticateMiddleware;
-exports.appAuthenticateMiddleware = new AppAuthenticateMiddleware();
-
-
-/***/ }),
-
 /***/ "./server/src/middlewares/AppLoggerMiddleware.ts":
 /*!*******************************************************!*\
   !*** ./server/src/middlewares/AppLoggerMiddleware.ts ***!
@@ -558,6 +482,55 @@ exports.appLoggerMiddleware = new AppLoggerMiddleware();
 
 /***/ }),
 
+/***/ "./server/src/models/db/mongo/GroupModel.ts":
+/*!**************************************************!*\
+  !*** ./server/src/models/db/mongo/GroupModel.ts ***!
+  \**************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const BaseModel_1 = __webpack_require__(/*! ../../../core/models/db/mongo/BaseModel */ "./server/src/core/models/db/mongo/BaseModel.ts");
+class GroupModel extends BaseModel_1.BaseModel {
+    constructor() {
+        super(...arguments);
+        this._name = 'Group';
+        this._schema = {
+            name: {
+                type: String,
+                required: true,
+            },
+            allowedServices: {
+                type: [String],
+            },
+            allowedRoutes: {
+                type: [String]
+            }
+        };
+        this._methods = {
+            guardService: function (service) {
+                //We have an exact match of service
+                if (this.allowedServices.indexOf(service) >= 0)
+                    return true;
+                //TODO: Check for parametised service
+            },
+            guardRoute: function (route) {
+                //We have an exact match of route
+                if (this.allowedServices.indexOf(route) >= 0)
+                    return true;
+                //TODO: Check for parametised route
+            }
+        };
+    }
+}
+exports.Group = ((new GroupModel()).model());
+exports.default = exports.Group;
+
+
+/***/ }),
+
 /***/ "./server/src/models/db/mongo/UserModel.ts":
 /*!*************************************************!*\
   !*** ./server/src/models/db/mongo/UserModel.ts ***!
@@ -568,7 +541,8 @@ exports.appLoggerMiddleware = new AppLoggerMiddleware();
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const BaseModel_1 = __webpack_require__(/*! ../../../core/db/mongo/BaseModel */ "./server/src/core/db/mongo/BaseModel.ts");
+const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
+const BaseModel_1 = __webpack_require__(/*! ../../../core/models/db/mongo/BaseModel */ "./server/src/core/models/db/mongo/BaseModel.ts");
 const UserUsernameValidator_1 = __webpack_require__(/*! ./validators/UserUsernameValidator */ "./server/src/models/db/mongo/validators/UserUsernameValidator.ts");
 class UserModel extends BaseModel_1.BaseModel {
     constructor() {
@@ -583,6 +557,10 @@ class UserModel extends BaseModel_1.BaseModel {
             password: {
                 type: String,
                 required: true
+            },
+            group: {
+                type: mongoose_1.Schema.Types.ObjectId,
+                ref: 'Group'
             },
             permissions: {
                 type: Number
@@ -611,7 +589,7 @@ exports.default = exports.User;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const BaseValidator_1 = __webpack_require__(/*! ../../../../core/db/mongo/validators/BaseValidator */ "./server/src/core/db/mongo/validators/BaseValidator.ts");
+const BaseValidator_1 = __webpack_require__(/*! ../../../../core/models/db/mongo/validators/BaseValidator */ "./server/src/core/models/db/mongo/validators/BaseValidator.ts");
 class UserUsernameValidator extends BaseValidator_1.default {
     constructor() {
         super(...arguments);
@@ -646,6 +624,57 @@ class DefaultRoute extends AppRoute_1.default {
 }
 exports.DefaultRoute = DefaultRoute;
 exports.defaultRoute = new DefaultRoute();
+
+
+/***/ }),
+
+/***/ "./server/src/routes/GroupRoute.ts":
+/*!*****************************************!*\
+  !*** ./server/src/routes/GroupRoute.ts ***!
+  \*****************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const AppRoute_1 = __webpack_require__(/*! ./../core/routing/AppRoute */ "./server/src/core/routing/AppRoute.ts");
+const GroupModel_1 = __webpack_require__(/*! ./../models/db/mongo/GroupModel */ "./server/src/models/db/mongo/GroupModel.ts");
+const AppMongoError_1 = __webpack_require__(/*! ./../errors/AppMongoError */ "./server/src/errors/AppMongoError.ts");
+class GroupRoute extends AppRoute_1.default {
+    constructor() {
+        super(...arguments);
+        this.path = '/group/';
+    }
+    post(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                let group = new GroupModel_1.Group();
+                group.name = 'newbie';
+                group.allowedServices = ['get:/user/{{sub}}'];
+                group.allowedRoutes = ['profile', 'favorites'];
+                yield group.save();
+                return res.json({
+                    success: 'Group Saved',
+                    status: 'ok'
+                });
+            }
+            catch (err) {
+                return res.json(AppMongoError_1.appMongoError.get());
+            }
+        });
+    }
+}
+exports.GroupRoute = GroupRoute;
+exports.groupRoute = new GroupRoute();
 
 
 /***/ }),
@@ -747,17 +776,6 @@ module.exports = require("express");
 /***/ (function(module, exports) {
 
 module.exports = require("http");
-
-/***/ }),
-
-/***/ "jsonwebtoken":
-/*!*******************************!*\
-  !*** external "jsonwebtoken" ***!
-  \*******************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
-
-module.exports = require("jsonwebtoken");
 
 /***/ }),
 

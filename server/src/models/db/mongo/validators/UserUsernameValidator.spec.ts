@@ -2,7 +2,7 @@ import * as sinon from 'sinon';
 import 'mocha';  
 import { SinonStub } from 'sinon';
 import { after } from 'mocha';
-import { mongoose } from './../../../../core/db/mongo/connection';
+import { mongoose } from './../../../../core/models/db/mongo/connection';
 import { UserUsernameValidator } from './UserUsernameValidator';
 import { expect } from 'chai';
 

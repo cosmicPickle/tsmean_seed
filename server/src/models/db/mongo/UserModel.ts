@@ -1,11 +1,13 @@
-import { Document, Model } from "mongoose";
-import { BaseModel } from "../../../core/db/mongo/BaseModel";
+import { Document, Model, Schema } from "mongoose";
+import { BaseModel } from "../../../core/models/db/mongo/BaseModel";
 import { userUsernameValidator } from './validators/UserUsernameValidator';
+import { IGroup, Group } from './GroupModel';
+
 export interface IUser extends Document {
     username: string;
     password: string;
+    group: IGroup;
     permissions: number;
-    session: string;
     hasPermission(threshold: number) : boolean;
 }
 
@@ -21,12 +23,16 @@ class UserModel extends BaseModel<IUser> {
             type: String,
             required: true
         },
+        group: {
+            type: Schema.Types.ObjectId, 
+            ref: 'Group' 
+        },
         permissions: {
             type: Number
         }
     }
     _methods = {
-        hasPermission: function(threshold: string): boolean {
+        hasPermission: function(threshold: number): boolean {
             return this.permissions <= threshold;
         }
     }

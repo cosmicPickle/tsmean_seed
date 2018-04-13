@@ -9,7 +9,10 @@ export const middlewares: AppMiddlewares= {
         bodyParser.json()
     ],
     '/user/:name?': {
-        get: [appLoggerMiddleware.log, appAuthenticateMiddleware.check]
+        get: [
+            appLoggerMiddleware.log, 
+            //appAuthenticateMiddleware.check
+        ]
     }
 };
 

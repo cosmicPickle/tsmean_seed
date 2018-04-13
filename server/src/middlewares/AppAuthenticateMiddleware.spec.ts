@@ -4,12 +4,12 @@ import { SinonStub } from 'sinon';
 import * as chai from 'chai';
 
 import { after } from 'mocha';
-import { mongoose } from './../core/db/mongo/connection';
+import { mongoose } from './../core/models/db/mongo/connection';
 import { appAuthenticateMiddleware } from './AppAuthenticateMiddleware';
 import { appAuthorizationError } from '../errors/AppAuthorizationError';
 import * as jwt from 'jsonwebtoken';
 import config from './../configuration/general'
-import { hostname } from 'os';
+import { AppToken, AppTokenPayload, AppTokenOptions } from './../core/models/AppToken';
 
 describe('Middleware: AppAuthenticateMiddleware', () => {
 
@@ -71,16 +71,20 @@ describe('Middleware: AppAuthenticateMiddleware', () => {
             };
 
             let username = 'cosmic1';
-            let payload = {
+            let payload: AppTokenPayload = {
+                sub: username,
+                aud: req.hostname,
+                iss: req.hostname,
                 scopes: ['get:user:cosmic1']
             }
+            let options: AppTokenOptions = {
+                expiresIn: '1d'
+            }
+            
+            let token = new AppToken(payload, options);
+            
             req.headers = {
-                'x-access-token': jwt.sign(payload, config.jwtSecret, {
-                    subject: username,
-                    audience: req.hostname,
-                    issuer: req.hostname,
-                    expiresIn: '1d'
-                })
+                'x-access-token': jwt.sign(token.payload, config.jwtSecret, token.options)
             }
             let res: Partial<Response> = {
                 json: sinon.stub()
