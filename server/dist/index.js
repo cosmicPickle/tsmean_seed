@@ -410,6 +410,30 @@ exports.appMongoError = new AppMongoError();
 
 /***/ }),
 
+/***/ "./server/src/errors/AppUnknownGroupError.ts":
+/*!***************************************************!*\
+  !*** ./server/src/errors/AppUnknownGroupError.ts ***!
+  \***************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const AppError_1 = __webpack_require__(/*! ../core/errors/AppError */ "./server/src/core/errors/AppError.ts");
+class AppUnknownGroupError extends AppError_1.AppError {
+    constructor() {
+        super(...arguments);
+        this.code = 1002;
+        this.message = "Unknown group";
+    }
+}
+exports.AppUnknownGroupError = AppUnknownGroupError;
+exports.appUnknownGroupError = new AppUnknownGroupError;
+
+
+/***/ }),
+
 /***/ "./server/src/errors/AppUnknownUserError.ts":
 /*!**************************************************!*\
   !*** ./server/src/errors/AppUnknownUserError.ts ***!
@@ -566,11 +590,6 @@ class UserModel extends BaseModel_1.BaseModel {
                 type: Number
             }
         };
-        this._methods = {
-            hasPermission: function (threshold) {
-                return this.permissions <= threshold;
-            }
-        };
     }
 }
 exports.User = ((new UserModel()).model());
@@ -701,6 +720,8 @@ const AppRoute_1 = __webpack_require__(/*! ./../core/routing/AppRoute */ "./serv
 const UserModel_1 = __webpack_require__(/*! ./../models/db/mongo/UserModel */ "./server/src/models/db/mongo/UserModel.ts");
 const AppMongoError_1 = __webpack_require__(/*! ./../errors/AppMongoError */ "./server/src/errors/AppMongoError.ts");
 const AppUnknownUserError_1 = __webpack_require__(/*! ./../errors/AppUnknownUserError */ "./server/src/errors/AppUnknownUserError.ts");
+const AppUnknownGroupError_1 = __webpack_require__(/*! ./../errors/AppUnknownGroupError */ "./server/src/errors/AppUnknownGroupError.ts");
+const GroupModel_1 = __webpack_require__(/*! ../models/db/mongo/GroupModel */ "./server/src/models/db/mongo/GroupModel.ts");
 class UserRoute extends AppRoute_1.default {
     constructor() {
         super(...arguments);
@@ -711,19 +732,46 @@ class UserRoute extends AppRoute_1.default {
             try {
                 const user = yield UserModel_1.User.findOne({
                     username: req.params.name || ''
-                });
+                }).populate('group');
                 if (!user)
                     return res.json(AppUnknownUserError_1.appUnknownUserError.get());
                 else {
                     return res.json({
                         handshake: 'Hi, ' + user.username,
-                        hasPermission: user.hasPermission(1),
+                        group: user.group.name,
                         status: 'ok'
                     });
                 }
             }
             catch (err) {
-                return res.json(AppMongoError_1.appMongoError.get());
+                let e = AppMongoError_1.appMongoError.get();
+                e.message += ` ${err}`;
+                return res.json(e);
+            }
+        });
+    }
+    post(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const group = yield GroupModel_1.Group.findOne({
+                    name: 'newbie'
+                });
+                if (!group)
+                    return res.json(AppUnknownGroupError_1.appUnknownGroupError.get());
+                let user = new UserModel_1.User();
+                user.username = req.params.name;
+                user.password = req.body.password;
+                user.group = group._id;
+                yield user.save();
+                return res.json({
+                    handshake: 'Hi, ' + user.username + ' welcome aboard',
+                    status: 'ok'
+                });
+            }
+            catch (err) {
+                let e = AppMongoError_1.appMongoError.get();
+                e.message += ` ${err}`;
+                return res.json(e);
             }
         });
     }

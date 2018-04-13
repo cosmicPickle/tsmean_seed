@@ -22,7 +22,10 @@ describe('class UserRoute', () => {
         let router = Router();
         let routerGetStub = sinon.stub(router, 'get');
         let path = '/user/:name?';
-        let middlewares = [appLoggerMiddleware.log, appAuthenticateMiddleware.check];
+        let middlewares = [
+            appLoggerMiddleware.log, 
+            //appAuthenticateMiddleware.check
+        ];
         
         userRoute.mountMiddlewares(router);
 

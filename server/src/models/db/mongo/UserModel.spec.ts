@@ -13,11 +13,11 @@ describe('model UserModel', () => {
         done();
     });
 
-    it('should have a hasPermissions function', (done) => {
-        let user = new User();
-        expect(user).to.have.property('hasPermission');
-        done();
-    })
+    // it('should have a hasPermissions function', (done) => {
+    //     let user = new User();
+    //     expect(user).to.have.property('hasPermission');
+    //     done();
+    // })
     
     it('should be invalid if username is empty', () => {
         let user = new User();
@@ -53,18 +53,5 @@ describe('model UserModel', () => {
         user.validate((err) => {
             expect(err).to.be.null;
         })
-    })
-
-    it('should have valid permissions', async () => {
-        let user = new User();
-        user.username = 'test';
-        user.password = '123qwe123';
-        user.permissions = 0;
-
-        let findOneStub = sinon.stub(User, 'findOne').resolves(user)
-        let u = await User.findOne(user.username);
-        (User.findOne as SinonStub).restore();
-        
-        expect(u.hasPermission(1)).to.be.true;
     })
 });

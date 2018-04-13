@@ -8,7 +8,6 @@ export interface IUser extends Document {
     password: string;
     group: IGroup;
     permissions: number;
-    hasPermission(threshold: number) : boolean;
 }
 
 class UserModel extends BaseModel<IUser> {
@@ -29,11 +28,6 @@ class UserModel extends BaseModel<IUser> {
         },
         permissions: {
             type: Number
-        }
-    }
-    _methods = {
-        hasPermission: function(threshold: number): boolean {
-            return this.permissions <= threshold;
         }
     }
 
