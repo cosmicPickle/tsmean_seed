@@ -5,6 +5,7 @@ import { appMongoError } from './../errors/AppMongoError';
 import { appUnknownUserError } from './../errors/AppUnknownUserError';
 import { appUnknownGroupError } from './../errors/AppUnknownGroupError';
 import { Group } from '../models/db/mongo/GroupModel';
+import { mongoose } from '../core/models/db/mongo/connection';
 export class UserRoute extends AppRoute {
     protected path = '/user/:name?'
 
@@ -12,28 +13,27 @@ export class UserRoute extends AppRoute {
         try {
             const user = await User.findOne({
                 username: req.params.name || ''
-            }).populate('group');
+            });
             
             if(!user)
                 return res.json(appUnknownUserError.get());
             else {
+                user.populate('group');
                 return res.json({
                     handshake: 'Hi, ' + user.username,
                     group: user.group.name,
                     status: 'ok'
-                })
+                });
             }
         } catch(err) {
-            let e = appMongoError.get();
-            e.message += ` ${err}`;
-            return res.json(e);
+            return res.json(appMongoError.parse(err).get());
         }
     }
 
     async post(req: Request, res: Response) {
         try {
             const group = await Group.findOne({
-                name: 'newbie'
+                _id: mongoose.Types.ObjectId(req.body.group)
             });
 
             if(!group) 
@@ -41,9 +41,9 @@ export class UserRoute extends AppRoute {
 
             let user = new User();
 
-            user.username = req.params.name;      
+            user.username = req.body.username;      
             user.password = req.body.password;
-            user.group = group._id;
+            user.group = group;
 
             await user.save();
 
@@ -52,9 +52,7 @@ export class UserRoute extends AppRoute {
                 status: 'ok'
             })
         } catch(err) {
-            let e = appMongoError.get();
-            e.message += ` ${err}`;
-            return res.json(e);
+            return res.json(appMongoError.parse(err).get());
         }
     }
 }

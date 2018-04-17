@@ -5,6 +5,7 @@ import { after } from 'mocha';
 import { mongoose } from './../../../core/models/db/mongo/connection';
 import { User } from './UserModel';
 import { expect } from 'chai';
+import { Group, IGroup } from './GroupModel';
 
 describe('model UserModel', () => {
 
@@ -45,12 +46,17 @@ describe('model UserModel', () => {
         })
     })
 
-    it('should be valid', () => {
+    it('should be valid', async () => {
         let user = new User();
         user.username = 'test';
         user.password = '123qwe123'
-
+        user.group = new Group();
+        user.group.name = "newbie";
+        user.group.allowedRoutes = ['test/'];
+        user.group.allowedServices = ['get:servive:{username}'];
+        
         user.validate((err) => {
+            console.log(err);
             expect(err).to.be.null;
         })
     })

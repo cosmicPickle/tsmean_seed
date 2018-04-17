@@ -199,7 +199,8 @@ class AppError {
     get() {
         return {
             code: this.code,
-            message: this.message
+            message: this.message,
+            payload: this.payload
         };
     }
 }
@@ -401,7 +402,35 @@ class AppMongoError extends AppError_1.AppError {
     constructor() {
         super(...arguments);
         this.code = 1001;
-        this.message = "Mongo Error";
+        this.message = "";
+    }
+    parse(err) {
+        if (err.errors) {
+            this.message = "mongoose_validation_error";
+            this.payload = {
+                invalid: Object.keys(err.errors).map((key) => {
+                    const e = err.errors[key];
+                    return {
+                        kind: e.kind,
+                        path: e.path,
+                        message: e.message,
+                        value: e.value
+                    };
+                })
+            };
+        }
+        else if (err.message.indexOf('duplicate key error') !== -1) {
+            this.message = "mongoose_duplicate_key_error";
+        }
+        else {
+            this.message = "mongoose_error";
+            if (true) {
+                this.payload = {
+                    debug: err.message
+                };
+            }
+        }
+        return this;
     }
 }
 exports.AppMongoError = AppMongoError;
@@ -576,6 +605,7 @@ class UserModel extends BaseModel_1.BaseModel {
             username: {
                 type: String,
                 required: true,
+                unique: true,
                 validate: UserUsernameValidator_1.userUsernameValidator.use()
             },
             password: {
@@ -584,7 +614,8 @@ class UserModel extends BaseModel_1.BaseModel {
             },
             group: {
                 type: mongoose_1.Schema.Types.ObjectId,
-                ref: 'Group'
+                ref: 'Group',
+                required: true
             },
             permissions: {
                 type: Number
@@ -722,6 +753,7 @@ const AppMongoError_1 = __webpack_require__(/*! ./../errors/AppMongoError */ "./
 const AppUnknownUserError_1 = __webpack_require__(/*! ./../errors/AppUnknownUserError */ "./server/src/errors/AppUnknownUserError.ts");
 const AppUnknownGroupError_1 = __webpack_require__(/*! ./../errors/AppUnknownGroupError */ "./server/src/errors/AppUnknownGroupError.ts");
 const GroupModel_1 = __webpack_require__(/*! ../models/db/mongo/GroupModel */ "./server/src/models/db/mongo/GroupModel.ts");
+const connection_1 = __webpack_require__(/*! ../core/models/db/mongo/connection */ "./server/src/core/models/db/mongo/connection.ts");
 class UserRoute extends AppRoute_1.default {
     constructor() {
         super(...arguments);
@@ -732,10 +764,11 @@ class UserRoute extends AppRoute_1.default {
             try {
                 const user = yield UserModel_1.User.findOne({
                     username: req.params.name || ''
-                }).populate('group');
+                });
                 if (!user)
                     return res.json(AppUnknownUserError_1.appUnknownUserError.get());
                 else {
+                    user.populate('group');
                     return res.json({
                         handshake: 'Hi, ' + user.username,
                         group: user.group.name,
@@ -744,9 +777,7 @@ class UserRoute extends AppRoute_1.default {
                 }
             }
             catch (err) {
-                let e = AppMongoError_1.appMongoError.get();
-                e.message += ` ${err}`;
-                return res.json(e);
+                return res.json(AppMongoError_1.appMongoError.parse(err).get());
             }
         });
     }
@@ -754,14 +785,14 @@ class UserRoute extends AppRoute_1.default {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const group = yield GroupModel_1.Group.findOne({
-                    name: 'newbie'
+                    _id: connection_1.mongoose.Types.ObjectId(req.body.group)
                 });
                 if (!group)
                     return res.json(AppUnknownGroupError_1.appUnknownGroupError.get());
                 let user = new UserModel_1.User();
-                user.username = req.params.name;
+                user.username = req.body.username;
                 user.password = req.body.password;
-                user.group = group._id;
+                user.group = group;
                 yield user.save();
                 return res.json({
                     handshake: 'Hi, ' + user.username + ' welcome aboard',
@@ -769,9 +800,7 @@ class UserRoute extends AppRoute_1.default {
                 });
             }
             catch (err) {
-                let e = AppMongoError_1.appMongoError.get();
-                e.message += ` ${err}`;
-                return res.json(e);
+                return res.json(AppMongoError_1.appMongoError.parse(err).get());
             }
         });
     }

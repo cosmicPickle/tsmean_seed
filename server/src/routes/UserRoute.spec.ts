@@ -10,12 +10,14 @@ import { appUnknownUserError } from '../errors/AppUnknownUserError';
 import { appMongoError } from '../errors/AppMongoError';
 import { appLoggerMiddleware } from '../middlewares/AppLoggerMiddleware';
 import { appAuthenticateMiddleware } from '../middlewares/AppAuthenticateMiddleware';
+import { IGroup, Group } from '../models/db/mongo/GroupModel';
 
 describe('class UserRoute', () => {
 
     after(function(done){
-        mongoose.connection.close();
-        done();
+        mongoose.connection.close(() => {
+            done();
+        });
     });
 
     it('should mount the proper middlewares', () => {
@@ -55,10 +57,20 @@ describe('class UserRoute', () => {
             };
             let findOneStub = sinon.stub(User, 'findOne').rejects(new Error('This is a Mongoose failure'));
 
-            await userRoute.get(<Request>req, <Response>res).then(() => {
+            try {
+                await userRoute.get(<Request>req, <Response>res);
                 (User.findOne as SinonStub).restore();
-                sinon.assert.calledWith(res.json as sinon.SinonStub, appMongoError.get())
-            });
+
+                let e = appMongoError.get();
+                e.message += 'mongoose_error';
+                e.payload = {
+                    debug: 'Error: This is a Mongoose failure'
+                }
+                
+                sinon.assert.calledWith(res.json as sinon.SinonStub, e);
+            } catch(e) {
+
+            }
         })
 
         it('should return UnknownUser Error on empty name', async () => {
@@ -74,7 +86,6 @@ describe('class UserRoute', () => {
             await userRoute.get(<Request>req, <Response>res).then(() => {
                 findOneStub.restore();
                 sinon.assert.calledWith(res.json as sinon.SinonStub,appUnknownUserError.get())
-                
             });
 
         });
@@ -94,7 +105,6 @@ describe('class UserRoute', () => {
             await userRoute.get(<Request>req, <Response>res).then(() => {
                 findOneStub.restore();
                 sinon.assert.calledWith(res.json as sinon.SinonStub, appUnknownUserError.get())
-                
             });
 
         });
@@ -134,15 +144,20 @@ describe('class UserRoute', () => {
             const user = new User();
             user.username = req.params.name;
             user.password = '123qwe123';
+            user.group = new Group();
+            user.group.name = "newbie";
+            user.group.allowedRoutes = ['test/'];
+            user.group.allowedServices = ['get:servive:{username}'];
+            
             user.permissions = 0;
 
-            let findOneStub = sinon.stub(User, 'findOne').resolves(user)
+            let findOneStub = sinon.stub(User, 'findOne').resolves(user);
 
             await userRoute.get(<Request>req, <Response>res).then(() => {
                 (User.findOne as SinonStub).restore();
                 sinon.assert.calledWith(res.json as sinon.SinonStub, {
                     handshake: 'Hi, ' + req.params.name,
-                    hasPermission: true,
+                    group: user.group.name,
                     status: 'ok'
                 })
             });

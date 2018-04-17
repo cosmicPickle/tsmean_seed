@@ -16,6 +16,7 @@ class UserModel extends BaseModel<IUser> {
         username: {
             type: String,
             required: true,
+            unique: true,
             validate: userUsernameValidator.use()
         },
         password: {
@@ -24,7 +25,8 @@ class UserModel extends BaseModel<IUser> {
         },
         group: {
             type: Schema.Types.ObjectId, 
-            ref: 'Group' 
+            ref: 'Group',
+            required: true
         },
         permissions: {
             type: Number
