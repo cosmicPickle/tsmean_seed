@@ -3,7 +3,6 @@ import * as sinon from 'sinon';
 import { SinonStub } from 'sinon';
 import * as chai from 'chai';
 
-import { after } from 'mocha';
 import { mongoose } from './../core/models/db/mongo/connection';
 import { appAuthenticateMiddleware } from './AppAuthenticateMiddleware';
 import { appAuthorizationError } from '../errors/AppAuthorizationError';
@@ -12,11 +11,6 @@ import config from './../configuration/general'
 import { AppToken, AppTokenPayload, AppTokenOptions } from './../core/models/AppToken';
 
 describe('Middleware: AppAuthenticateMiddleware', () => {
-
-    after(function(done){
-        mongoose.connection.close();
-        done();
-    });
 
     describe('check() method', () => {
 

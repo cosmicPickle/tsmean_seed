@@ -1,17 +1,11 @@
 import * as sinon from 'sinon';
 import 'mocha';  
 import { SinonStub } from 'sinon';
-import { after } from 'mocha';
 import { mongoose } from './../../../../core/models/db/mongo/connection';
 import { UserUsernameValidator } from './UserUsernameValidator';
 import { expect } from 'chai';
 
 describe('validator UserUsernameValidator', () => {
-
-    after((done) => {
-        mongoose.connection.close();
-        done();
-    })
 
     it('should validate if value consists of letters only', () => {
         let u = new UserUsernameValidator()

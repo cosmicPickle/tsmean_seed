@@ -2,16 +2,13 @@ import { Response, Request, Express, NextFunction } from 'express';
 import * as sinon from 'sinon';
 import 'mocha';  
 import { SinonStub } from 'sinon';
-import { after } from 'mocha';
 import { mongoose } from './../core/models/db/mongo/connection';
 import { appLoggerMiddleware } from './AppLoggerMiddleware'
+import { logger } from '../core/lib/AppLogger';
+import { LoggerInstance } from 'winston';
 
 describe('Middleware: AppLoggerMiddleware', () => {
 
-    after(function(done){
-        mongoose.connection.close();
-        done();
-    });
 
     describe('log() method', () => {
 
@@ -26,11 +23,11 @@ describe('Middleware: AppLoggerMiddleware', () => {
             let res: Partial<Response> = {};
             let next: NextFunction = sinon.stub();
 
-            let consoleLogStub = sinon.stub(console, 'log');
+            let consoleLogStub = sinon.stub(logger as LoggerInstance, 'debug');
 
             appLoggerMiddleware.log(<Request>req, <Response>res, next);
 
-            (console.log as SinonStub).restore();
+            (logger.debug as SinonStub).restore();
 
             sinon.assert.calledWith(consoleLogStub, `Request ${req.method.toUpperCase()} ${req.path}: ${JSON.stringify(req.params)}`);
             sinon.assert.called(next as SinonStub);

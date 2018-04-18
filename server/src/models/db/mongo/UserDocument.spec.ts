@@ -1,18 +1,12 @@
 import * as sinon from 'sinon';
 import 'mocha';  
 import { SinonStub } from 'sinon';
-import { after } from 'mocha';
 import { mongoose } from './../../../core/models/db/mongo/connection';
-import { User } from './UserModel';
+import { User } from './UserDocument';
 import { expect } from 'chai';
-import { Group, IGroup } from './GroupModel';
+import { Group, IGroup } from './GroupDocument';
 
-describe('model UserModel', () => {
-
-    after(function(done){
-        mongoose.connection.close();
-        done();
-    });
+describe('model UserDocument', () => {
 
     // it('should have a hasPermissions function', (done) => {
     //     let user = new User();
@@ -56,7 +50,6 @@ describe('model UserModel', () => {
         user.group.allowedServices = ['get:servive:{username}'];
         
         user.validate((err) => {
-            console.log(err);
             expect(err).to.be.null;
         })
     })

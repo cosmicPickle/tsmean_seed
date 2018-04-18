@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import AppRoute from './../core/routing/AppRoute';
-import { Group } from './../models/db/mongo/GroupModel';
+import { Group } from './../models/db/mongo/GroupDocument';
 import { appMongoError } from './../errors/AppMongoError'
 import { appUnknownUserError } from './../errors/AppUnknownUserError'
 export class GroupRoute extends AppRoute {

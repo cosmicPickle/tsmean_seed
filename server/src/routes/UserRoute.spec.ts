@@ -3,22 +3,16 @@ import { Response, Request, Express, Router } from 'express';
 import * as sinon from 'sinon';
 import 'mocha';  
 import { SinonStub } from 'sinon';
-import { after } from 'mocha';
+
 import { mongoose } from '../core/models/db/mongo/connection';
-import { User } from '../models/db/mongo/UserModel';
+import { User } from '../models/db/mongo/UserDocument';
 import { appUnknownUserError } from '../errors/AppUnknownUserError';
 import { appMongoError } from '../errors/AppMongoError';
 import { appLoggerMiddleware } from '../middlewares/AppLoggerMiddleware';
 import { appAuthenticateMiddleware } from '../middlewares/AppAuthenticateMiddleware';
-import { IGroup, Group } from '../models/db/mongo/GroupModel';
+import { IGroup, Group } from '../models/db/mongo/GroupDocument';
 
 describe('class UserRoute', () => {
-
-    after(function(done){
-        mongoose.connection.close(() => {
-            done();
-        });
-    });
 
     it('should mount the proper middlewares', () => {
         let router = Router();
@@ -129,7 +123,7 @@ describe('class UserRoute', () => {
 
         });
 
-        it('should return the name and hasPermission=true when selecting a valid user', async () => {
+        it('should return the name and group when selecting a valid user', async () => {
 
             let req: Partial<Request> = {
                 params: {

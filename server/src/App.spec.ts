@@ -2,18 +2,12 @@ import { Response, Request, Express } from 'express';
 import * as sinon from 'sinon';
 import 'mocha';  
 import { SinonStub } from 'sinon';
-import { after } from 'mocha';
 import { mongoose } from './core/models/db/mongo/connection';
 import { App } from './App';
 import { middlewares } from './configuration/middlewares/middlewaresConfig'
 import { routesConfig } from './configuration/routes/routesConfig';
 
 describe('Server: App', () => {
-
-    after((done) => {
-        mongoose.connection.close();
-        done();
-    })
 
     it('should mount global middlewares', () => {
         let app = new App();

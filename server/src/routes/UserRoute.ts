@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
 import AppRoute from './../core/routing/AppRoute';
-import { User } from './../models/db/mongo/UserModel';
+import { User } from './../models/db/mongo/UserDocument';
 import { appMongoError } from './../errors/AppMongoError';
 import { appUnknownUserError } from './../errors/AppUnknownUserError';
 import { appUnknownGroupError } from './../errors/AppUnknownGroupError';
-import { Group } from '../models/db/mongo/GroupModel';
+import { Group } from '../models/db/mongo/GroupDocument';
 import { mongoose } from '../core/models/db/mongo/connection';
 export class UserRoute extends AppRoute {
     protected path = '/user/:name?'

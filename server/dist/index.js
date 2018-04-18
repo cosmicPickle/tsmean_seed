@@ -210,10 +210,132 @@ exports.default = AppError;
 
 /***/ }),
 
-/***/ "./server/src/core/models/db/mongo/BaseModel.ts":
-/*!******************************************************!*\
-  !*** ./server/src/core/models/db/mongo/BaseModel.ts ***!
-  \******************************************************/
+/***/ "./server/src/core/lib/AppLogger.ts":
+/*!******************************************!*\
+  !*** ./server/src/core/lib/AppLogger.ts ***!
+  \******************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const winston = __webpack_require__(/*! winston */ "winston");
+class AppLogger {
+    constructor() {
+        this.__transportsDev = [
+            new winston.transports.Console({
+                level: 'debug',
+                colorize: true,
+                handleExceptions: true,
+                humanReadableUnhandledException: true
+            }),
+        ];
+        this.__transportsProd = [
+            new winston.transports.File({
+                filename: './logs/app.log',
+                maxsize: 1024 * 1024,
+                level: 'info',
+                handleExceptions: true,
+                humanReadableUnhandledException: true
+            })
+        ];
+        this.__loggerOptions = {
+            exitOnError: false
+        };
+        if (true)
+            this.__loggerOptions.transports = this.__transportsDev;
+        else
+            {}
+        this.__winston = new winston.Logger(this.__loggerOptions);
+    }
+    /**
+     * logger
+     */
+    logger() {
+        return this.__winston;
+    }
+}
+exports.logger = new AppLogger().logger();
+
+
+/***/ }),
+
+/***/ "./server/src/core/lib/AppMongooseModelManager.ts":
+/*!********************************************************!*\
+  !*** ./server/src/core/lib/AppMongooseModelManager.ts ***!
+  \********************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const connection_1 = __webpack_require__(/*! ./../models/db/mongo/connection */ "./server/src/core/models/db/mongo/connection.ts");
+const AppLogger_1 = __webpack_require__(/*! ./AppLogger */ "./server/src/core/lib/AppLogger.ts");
+class AppMongooseModelManager {
+    constructor() {
+        this.__models = [];
+        this.__indexesCreated = [];
+    }
+    waitIndexesCreated() {
+        AppLogger_1.logger.info("Waiting for MongoDB Indexes to be created.");
+        const modelNames = connection_1.mongoose.connection.modelNames();
+        modelNames.forEach((name) => {
+            this.__models.push(connection_1.mongoose.connection.model(name));
+            let model = this.__models[this.__models.length - 1];
+            this.__indexesCreated.push(model.waitIndexesCreated());
+        });
+        return Promise.all(this.__indexesCreated).then((value) => {
+            AppLogger_1.logger.info('MongoDB Indexes Created.');
+            return value;
+        }, (err) => {
+            AppLogger_1.logger.error(err);
+            return err;
+        });
+    }
+}
+exports.AppMongooseModelManager = AppMongooseModelManager;
+exports.appMongooseModelManager = new AppMongooseModelManager();
+exports.default = exports.appMongooseModelManager;
+
+
+/***/ }),
+
+/***/ "./server/src/core/lib/Q.ts":
+/*!**********************************!*\
+  !*** ./server/src/core/lib/Q.ts ***!
+  \**********************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+class Q {
+    defer() {
+        let resolve;
+        let reject;
+        let promise = new Promise(function () {
+            resolve = arguments[0];
+            reject = arguments[1];
+        });
+        return {
+            resolve: resolve,
+            reject: reject,
+            promise: promise
+        };
+    }
+}
+exports.Q = Q;
+
+
+/***/ }),
+
+/***/ "./server/src/core/models/db/mongo/BaseDocument.ts":
+/*!*********************************************************!*\
+  !*** ./server/src/core/models/db/mongo/BaseDocument.ts ***!
+  \*********************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -222,15 +344,35 @@ exports.default = AppError;
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
 const connection_1 = __webpack_require__(/*! ./connection */ "./server/src/core/models/db/mongo/connection.ts");
-class BaseModel {
+const Q_1 = __webpack_require__(/*! ./../../../lib/Q */ "./server/src/core/lib/Q.ts");
+class BaseDocument {
+    constructor() {
+        this.__indexesCreated = (new Q_1.Q).defer();
+    }
+    __waitIndexesCreated() {
+        return this.__indexesCreated.promise;
+    }
     model() {
-        this.schema = new mongoose_1.Schema(this._schema);
-        this.schema.methods = this._methods;
-        return connection_1.mongoose.model(this._name, this.schema);
+        this.__schema = new mongoose_1.Schema(this.schema);
+        this.__schema.methods = this.methods || {};
+        this.__schema.statics = this.statics || {};
+        this.__schema.static('waitIndexesCreated', () => {
+            return this.__waitIndexesCreated();
+        });
+        let model = connection_1.mongoose.model(this.name, this.__schema);
+        model.ensureIndexes((err) => {
+            if (err) {
+                this.__indexesCreated.reject(err);
+            }
+            else {
+                this.__indexesCreated.resolve();
+            }
+        });
+        return model;
     }
 }
-exports.BaseModel = BaseModel;
-exports.default = BaseModel;
+exports.BaseDocument = BaseDocument;
+exports.default = BaseDocument;
 
 
 /***/ }),
@@ -249,7 +391,8 @@ const mongoose = __webpack_require__(/*! mongoose */ "mongoose");
 exports.mongoose = mongoose;
 const mongo_1 = __webpack_require__(/*! ./../../../../configuration/db/mongo */ "./server/src/configuration/db/mongo.ts");
 const connect = `mongodb://${mongo_1.mongoConfig.user}:${mongo_1.mongoConfig.password}@${mongo_1.mongoConfig.host}`;
-mongoose.connect(connect);
+const options = { autoIndex: false };
+const db = mongoose.connect(connect, options);
 
 
 /***/ }),
@@ -496,17 +639,37 @@ exports.appUnknownUserError = new AppUnknownUserError;
 
 "use strict";
 
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const App_1 = __webpack_require__(/*! ./App */ "./server/src/App.ts");
 const http = __webpack_require__(/*! http */ "http");
+const AppLogger_1 = __webpack_require__(/*! ./core/lib/AppLogger */ "./server/src/core/lib/AppLogger.ts");
+const AppMongooseModelManager_1 = __webpack_require__(/*! ./core/lib/AppMongooseModelManager */ "./server/src/core/lib/AppMongooseModelManager.ts");
 const port = process.env.PORT || 3000;
-http.createServer(App_1.default).listen(port, (err) => {
-    if (err) {
-        return console.log(err);
+let start = () => __awaiter(this, void 0, void 0, function* () {
+    try {
+        //Bootstrapping server
+        yield AppMongooseModelManager_1.appMongooseModelManager.waitIndexesCreated();
+        http.createServer(App_1.default).listen(port, (err) => {
+            if (err) {
+                return AppLogger_1.logger.error(err);
+            }
+            return AppLogger_1.logger.info(`server is listening on ${port} ${"development"}`);
+        });
     }
-    return console.log(`server is listening on ${port} ${"development"}`);
+    catch (err) {
+        AppLogger_1.logger.error(err);
+    }
+    return App_1.default;
 });
-exports.server = App_1.default;
+exports.server = start();
 
 
 /***/ }),
@@ -521,10 +684,11 @@ exports.server = App_1.default;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+const AppLogger_1 = __webpack_require__(/*! ../core/lib/AppLogger */ "./server/src/core/lib/AppLogger.ts");
 class AppLoggerMiddleware {
     constructor() {
         this.log = (req, res, next) => {
-            console.log(`Request ${req.method.toUpperCase()} ${req.path}: ${JSON.stringify(req.params)}`);
+            AppLogger_1.logger.debug(`Request ${req.method.toUpperCase()} ${req.path}: ${JSON.stringify(req.params)}`);
             next();
         };
     }
@@ -545,15 +709,16 @@ exports.appLoggerMiddleware = new AppLoggerMiddleware();
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const BaseModel_1 = __webpack_require__(/*! ../../../core/models/db/mongo/BaseModel */ "./server/src/core/models/db/mongo/BaseModel.ts");
-class GroupModel extends BaseModel_1.BaseModel {
+const BaseDocument_1 = __webpack_require__(/*! ../../../core/models/db/mongo/BaseDocument */ "./server/src/core/models/db/mongo/BaseDocument.ts");
+class GroupDocument extends BaseDocument_1.BaseDocument {
     constructor() {
         super(...arguments);
-        this._name = 'Group';
-        this._schema = {
+        this.name = 'Group';
+        this.schema = {
             name: {
                 type: String,
                 required: true,
+                unique: true
             },
             allowedServices: {
                 type: [String],
@@ -562,7 +727,7 @@ class GroupModel extends BaseModel_1.BaseModel {
                 type: [String]
             }
         };
-        this._methods = {
+        this.methods = {
             guardService: function (service) {
                 //We have an exact match of service
                 if (this.allowedServices.indexOf(service) >= 0)
@@ -578,7 +743,7 @@ class GroupModel extends BaseModel_1.BaseModel {
         };
     }
 }
-exports.Group = ((new GroupModel()).model());
+exports.Group = ((new GroupDocument()).model());
 exports.default = exports.Group;
 
 
@@ -595,13 +760,13 @@ exports.default = exports.Group;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
-const BaseModel_1 = __webpack_require__(/*! ../../../core/models/db/mongo/BaseModel */ "./server/src/core/models/db/mongo/BaseModel.ts");
+const BaseDocument_1 = __webpack_require__(/*! ../../../core/models/db/mongo/BaseDocument */ "./server/src/core/models/db/mongo/BaseDocument.ts");
 const UserUsernameValidator_1 = __webpack_require__(/*! ./validators/UserUsernameValidator */ "./server/src/models/db/mongo/validators/UserUsernameValidator.ts");
-class UserModel extends BaseModel_1.BaseModel {
+class UserDocument extends BaseDocument_1.BaseDocument {
     constructor() {
         super(...arguments);
-        this._name = 'User';
-        this._schema = {
+        this.name = 'User';
+        this.schema = {
             username: {
                 type: String,
                 required: true,
@@ -615,15 +780,20 @@ class UserModel extends BaseModel_1.BaseModel {
             group: {
                 type: mongoose_1.Schema.Types.ObjectId,
                 ref: 'Group',
-                required: true
+                required: true,
             },
             permissions: {
                 type: Number
             }
         };
+        this.methods = {
+            test: () => {
+                return 1;
+            }
+        };
     }
 }
-exports.User = ((new UserModel()).model());
+exports.User = ((new UserDocument()).model());
 exports.default = exports.User;
 
 
@@ -864,6 +1034,17 @@ module.exports = require("http");
 /***/ (function(module, exports) {
 
 module.exports = require("mongoose");
+
+/***/ }),
+
+/***/ "winston":
+/*!**************************!*\
+  !*** external "winston" ***!
+  \**************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = require("winston");
 
 /***/ })
 

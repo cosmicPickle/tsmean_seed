@@ -1,18 +1,19 @@
 import { Document, Model, Schema } from "mongoose";
-import { BaseModel } from "../../../core/models/db/mongo/BaseModel";
+import { BaseDocument } from "../../../core/models/db/mongo/BaseDocument";
 import { userUsernameValidator } from './validators/UserUsernameValidator';
-import { IGroup, Group } from './GroupModel';
+import { IGroup, Group } from './GroupDocument';
 
 export interface IUser extends Document {
     username: string;
     password: string;
     group: IGroup;
     permissions: number;
+    test(): number;
 }
 
-class UserModel extends BaseModel<IUser> {
-    _name = 'User';
-    _schema = {
+class UserDocument extends BaseDocument<IUser> {
+    name = 'User';
+    schema = {
         username: {
             type: String,
             required: true,
@@ -26,14 +27,19 @@ class UserModel extends BaseModel<IUser> {
         group: {
             type: Schema.Types.ObjectId, 
             ref: 'Group',
-            required: true
+            required: true,
         },
         permissions: {
             type: Number
         }
     }
-
+    methods = {
+        test: () => {
+            return 1;
+        }
+    }
 }
 
-export const User = ((new UserModel()).model());
+export const User = ((new UserDocument()).model());
+
 export default User;

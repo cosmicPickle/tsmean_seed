@@ -1,5 +1,5 @@
 import { Document, Model } from "mongoose";
-import { BaseModel } from "../../../core/models/db/mongo/BaseModel";
+import { BaseDocument } from "../../../core/models/db/mongo/BaseDocument";
 
 export interface IGroup extends Document {
     name: string;
@@ -9,12 +9,13 @@ export interface IGroup extends Document {
     guardRoute(route: string): boolean
 }
 
-class GroupModel extends BaseModel<IGroup> {
-    _name = 'Group';
-    _schema = {
+class GroupDocument extends BaseDocument<IGroup> {
+    name = 'Group';
+    schema = {
         name: {
             type: String,
             required: true,
+            unique: true
         },
         allowedServices: {
             type: [String],
@@ -24,7 +25,7 @@ class GroupModel extends BaseModel<IGroup> {
             type: [String]
         }
     }
-    _methods = {
+    methods = {
         guardService: function(service: string): boolean {
 
             //We have an exact match of service
@@ -48,5 +49,5 @@ class GroupModel extends BaseModel<IGroup> {
 
 }
 
-export const Group = ((new GroupModel()).model());
+export const Group = ((new GroupDocument()).model());
 export default Group;
