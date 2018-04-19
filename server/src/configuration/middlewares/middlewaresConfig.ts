@@ -5,8 +5,8 @@ import { appAuthenticateMiddleware } from './../../middlewares/AppAuthenticateMi
 
 export const middlewares: AppMiddlewares= {
     _: [
-        bodyParser.urlencoded({ extended: false }),
-        bodyParser.json()
+        bodyParser.urlencoded({ extended: true }),
+        bodyParser.json({ strict: false})
     ],
     '/user/:name?': {
         get: [

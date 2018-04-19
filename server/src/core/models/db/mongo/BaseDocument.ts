@@ -2,6 +2,7 @@
 import { Document, Model, Schema, Mongoose } from "mongoose";
 import { mongoose } from './connection';
 import { Q, Deferred } from './../../../lib/Q';
+import { logger } from "../../../lib/AppLogger";
 
 export type BaseDocumentMethods = {
     [propName: string] : (...args: any[]) => any
@@ -38,6 +39,7 @@ export class BaseDocument<T extends Document> implements IBaseDocument {
             return this.__waitIndexesCreated();
         });
 
+        logger.debug(`creating model ${this.name}`);
         let model = mongoose.model<T>(this.name, this.__schema) as IBaseModel<T>;
         model.ensureIndexes((err) => {
             if(err) {

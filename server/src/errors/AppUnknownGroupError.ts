@@ -2,7 +2,7 @@ import { AppError } from '../core/errors/AppError';
 
 export class AppUnknownGroupError extends AppError {
     
-    protected code = 1002;
+    protected code = 1005;
     protected message = "Unknown group";
 }
 

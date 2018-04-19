@@ -55,21 +55,28 @@ describe('Middleware: AppAuthenticateMiddleware', () => {
             sinon.assert.notCalled(next as SinonStub);
         });
 
-        it('should call next() if a valid token is provided', () => {
+        it('should call next() if a valid token is provided', async () => {
+            let username = 'cosmic';
+            
             let req: Partial<Request> = {
                 method: 'get',
                 hostname: 'localhost',
                 params: {},
+                url: `/user/${username}`,
                 body: {},
                 query: {}
             };
 
-            let username = 'cosmic1';
             let payload: AppTokenPayload = {
                 sub: username,
                 aud: req.hostname,
                 iss: req.hostname,
-                scopes: ['get:user:cosmic1']
+                scopes: {
+                    services: [{
+                        method: 'get',
+                        path: `/user/${username}`
+                    }]
+                }
             }
             let options: AppTokenOptions = {
                 expiresIn: '1d'
@@ -85,7 +92,7 @@ describe('Middleware: AppAuthenticateMiddleware', () => {
             };
             let next: NextFunction = sinon.stub();
 
-            appAuthenticateMiddleware.check(<Request>req, <Response>res, next);
+            await appAuthenticateMiddleware.check(<Request>req, <Response>res, next);
             sinon.assert.notCalled(res.json as SinonStub);
             sinon.assert.called(next as SinonStub);
             chai.expect(req.body.__djwt.sub).to.eq(username);

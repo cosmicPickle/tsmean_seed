@@ -46,8 +46,11 @@ describe('model UserDocument', () => {
         user.password = '123qwe123'
         user.group = new Group();
         user.group.name = "newbie";
-        user.group.allowedRoutes = ['test/'];
-        user.group.allowedServices = ['get:servive:{username}'];
+        user.group.allowedRoutes = ['/home'];
+        user.group.allowedServices = [{
+            method: 'get',
+            path: `/group/${user.group.name}`
+        }];
         
         user.validate((err) => {
             expect(err).to.be.null;

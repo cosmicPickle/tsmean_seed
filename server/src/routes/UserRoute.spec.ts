@@ -5,12 +5,13 @@ import 'mocha';
 import { SinonStub } from 'sinon';
 
 import { mongoose } from '../core/models/db/mongo/connection';
-import { User } from '../models/db/mongo/UserDocument';
+import { User, IUser } from '../models/db/mongo/UserDocument';
 import { appUnknownUserError } from '../errors/AppUnknownUserError';
 import { appMongoError } from '../errors/AppMongoError';
 import { appLoggerMiddleware } from '../middlewares/AppLoggerMiddleware';
 import { appAuthenticateMiddleware } from '../middlewares/AppAuthenticateMiddleware';
 import { IGroup, Group } from '../models/db/mongo/GroupDocument';
+import { Model } from 'mongoose';
 
 describe('class UserRoute', () => {
 
@@ -49,22 +50,29 @@ describe('class UserRoute', () => {
             let res: Partial<Response> = {
                 json: sinon.stub()
             };
-            let findOneStub = sinon.stub(User, 'findOne').rejects(new Error('This is a Mongoose failure'));
+            let findOneStub: SinonStub;
 
             try {
+                findOneStub = sinon.stub(User, 'findOne').returns({
+                    populate: sinon.stub().returns({
+                        exec: sinon.stub().rejects(new Error('This is a Mongoose failure'))
+                    })
+                } as Partial<Model<IUser>>);
+
                 await userRoute.get(<Request>req, <Response>res);
-                (User.findOne as SinonStub).restore();
-
-                let e = appMongoError.get();
-                e.message += 'mongoose_error';
-                e.payload = {
-                    debug: 'Error: This is a Mongoose failure'
-                }
-                
-                sinon.assert.calledWith(res.json as sinon.SinonStub, e);
-            } catch(e) {
-
+            } catch(e) { 
+                console.log(e);
             }
+
+            (User.findOne as SinonStub).restore();
+
+            let e = appMongoError.get();
+            e.message = 'mongoose_error';
+            e.payload = {
+                debug: 'This is a Mongoose failure'
+            }
+            
+            sinon.assert.calledWith(res.json as sinon.SinonStub, e);
         })
 
         it('should return UnknownUser Error on empty name', async () => {
@@ -75,7 +83,11 @@ describe('class UserRoute', () => {
             let res: Partial<Response> = {
                 json: sinon.stub()
             };
-            let findOneStub = sinon.stub(User, 'findOne').resolves(null);
+            let findOneStub = sinon.stub(User, 'findOne').returns({
+                populate: sinon.stub().returns({
+                    exec: sinon.stub().resolves(null)
+                })
+            } as Partial<Model<IUser>>);
 
             await userRoute.get(<Request>req, <Response>res).then(() => {
                 findOneStub.restore();
@@ -94,7 +106,11 @@ describe('class UserRoute', () => {
             let res: Partial<Response> = {
                 json: sinon.stub()
             };
-            let findOneStub = sinon.stub(User, 'findOne').resolves(null);
+            let findOneStub = sinon.stub(User, 'findOne').returns({
+                populate: sinon.stub().returns({
+                    exec: sinon.stub().resolves(null)
+                })
+            } as Partial<Model<IUser>>);
 
             await userRoute.get(<Request>req, <Response>res).then(() => {
                 findOneStub.restore();
@@ -113,7 +129,11 @@ describe('class UserRoute', () => {
             let res: Partial<Response> = {
                 json: sinon.stub()
             };
-            let findOneStub = sinon.stub(User, 'findOne').resolves(null);
+            let findOneStub = sinon.stub(User, 'findOne').returns({
+                populate: sinon.stub().returns({
+                    exec: sinon.stub().resolves(null)
+                })
+            } as Partial<Model<IUser>>);
 
             await userRoute.get(<Request>req, <Response>res).then(() => {
                 findOneStub.restore();
@@ -140,12 +160,18 @@ describe('class UserRoute', () => {
             user.password = '123qwe123';
             user.group = new Group();
             user.group.name = "newbie";
-            user.group.allowedRoutes = ['test/'];
-            user.group.allowedServices = ['get:servive:{username}'];
+            user.group.allowedRoutes = ['/test/'];
+            user.group.allowedServices = [{
+                method: 'get',
+                path: `/group/${user.group.name}`
+            }];
             
-            user.permissions = 0;
 
-            let findOneStub = sinon.stub(User, 'findOne').resolves(user);
+            let findOneStub = sinon.stub(User, 'findOne').returns({
+                populate: sinon.stub().returns({
+                    exec: sinon.stub().resolves(user)
+                })
+            } as Partial<Model<IUser>>);
 
             await userRoute.get(<Request>req, <Response>res).then(() => {
                 (User.findOne as SinonStub).restore();

@@ -10,11 +10,11 @@ class AppLogger {
             handleExceptions: true,
             humanReadableUnhandledException: true
         }),
-        // new winston.transports.File({
-        //     filename: './logs/app.log',
-        //     maxsize: 1024*1024,
-        //     level: 'info'
-        // })
+        new winston.transports.File({
+            filename: './logs/app.log',
+            maxsize: 1024*1024,
+            level: 'error'
+        })
     ];
     private __transportsProd: winston.TransportInstance[] = [
         new winston.transports.File({

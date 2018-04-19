@@ -3,16 +3,18 @@ import AppRoute from './../core/routing/AppRoute';
 import { Group } from './../models/db/mongo/GroupDocument';
 import { appMongoError } from './../errors/AppMongoError'
 import { appUnknownUserError } from './../errors/AppUnknownUserError'
+import { AppServicePath } from '../core/models/AppServicePath';
+import { logger } from '../core/lib/AppLogger';
 export class GroupRoute extends AppRoute {
-    protected path = '/group/'
+    protected path = '/group/:id?'
 
     async post(req: Request, res: Response) {
         try {
             let group = new Group();
-            group.name = 'newbie';
-            group.allowedServices = ['get:/user/{{sub}}'];
-            group.allowedRoutes = ['profile', 'favorites'];
-
+            group.name = req.body.name;
+            group.allowedRoutes = req.body.allowedRoutes;
+            group.allowedServices = req.body.allowedServices as AppServicePath[];
+            
             await group.save();
             
             return res.json({
@@ -20,7 +22,7 @@ export class GroupRoute extends AppRoute {
                 status: 'ok'
             })
         } catch(err) {
-            return res.json(appMongoError.get());
+            return res.json(appMongoError.parse(err).get());
         }
         
     }

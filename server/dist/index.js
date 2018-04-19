@@ -148,8 +148,8 @@ const bodyParser = __webpack_require__(/*! body-parser */ "body-parser");
 const AppLoggerMiddleware_1 = __webpack_require__(/*! ./../../middlewares/AppLoggerMiddleware */ "./server/src/middlewares/AppLoggerMiddleware.ts");
 exports.middlewares = {
     _: [
-        bodyParser.urlencoded({ extended: false }),
-        bodyParser.json()
+        bodyParser.urlencoded({ extended: true }),
+        bodyParser.json({ strict: false })
     ],
     '/user/:name?': {
         get: [
@@ -230,6 +230,11 @@ class AppLogger {
                 handleExceptions: true,
                 humanReadableUnhandledException: true
             }),
+            new winston.transports.File({
+                filename: './logs/app.log',
+                maxsize: 1024 * 1024,
+                level: 'error'
+            })
         ];
         this.__transportsProd = [
             new winston.transports.File({
@@ -345,6 +350,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
 const connection_1 = __webpack_require__(/*! ./connection */ "./server/src/core/models/db/mongo/connection.ts");
 const Q_1 = __webpack_require__(/*! ./../../../lib/Q */ "./server/src/core/lib/Q.ts");
+const AppLogger_1 = __webpack_require__(/*! ../../../lib/AppLogger */ "./server/src/core/lib/AppLogger.ts");
 class BaseDocument {
     constructor() {
         this.__indexesCreated = (new Q_1.Q).defer();
@@ -359,6 +365,7 @@ class BaseDocument {
         this.__schema.static('waitIndexesCreated', () => {
             return this.__waitIndexesCreated();
         });
+        AppLogger_1.logger.debug(`creating model ${this.name}`);
         let model = connection_1.mongoose.model(this.name, this.__schema);
         model.ensureIndexes((err) => {
             if (err) {
@@ -520,7 +527,7 @@ const AppError_1 = __webpack_require__(/*! ../core/errors/AppError */ "./server/
 class AppInvalidRouteError extends AppError_1.AppError {
     constructor() {
         super(...arguments);
-        this.code = 1000;
+        this.code = 1004;
         this.message = "Invalid Route";
     }
 }
@@ -596,7 +603,7 @@ const AppError_1 = __webpack_require__(/*! ../core/errors/AppError */ "./server/
 class AppUnknownGroupError extends AppError_1.AppError {
     constructor() {
         super(...arguments);
-        this.code = 1002;
+        this.code = 1005;
         this.message = "Unknown group";
     }
 }
@@ -699,10 +706,10 @@ exports.appLoggerMiddleware = new AppLoggerMiddleware();
 
 /***/ }),
 
-/***/ "./server/src/models/db/mongo/GroupModel.ts":
-/*!**************************************************!*\
-  !*** ./server/src/models/db/mongo/GroupModel.ts ***!
-  \**************************************************/
+/***/ "./server/src/models/db/mongo/GroupDocument.ts":
+/*!*****************************************************!*\
+  !*** ./server/src/models/db/mongo/GroupDocument.ts ***!
+  \*****************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -721,26 +728,16 @@ class GroupDocument extends BaseDocument_1.BaseDocument {
                 unique: true
             },
             allowedServices: {
-                type: [String],
+                type: [{
+                        method: String,
+                        path: String
+                    }]
             },
             allowedRoutes: {
                 type: [String]
             }
         };
-        this.methods = {
-            guardService: function (service) {
-                //We have an exact match of service
-                if (this.allowedServices.indexOf(service) >= 0)
-                    return true;
-                //TODO: Check for parametised service
-            },
-            guardRoute: function (route) {
-                //We have an exact match of route
-                if (this.allowedServices.indexOf(route) >= 0)
-                    return true;
-                //TODO: Check for parametised route
-            }
-        };
+        this.methods = {};
     }
 }
 exports.Group = ((new GroupDocument()).model());
@@ -749,10 +746,10 @@ exports.default = exports.Group;
 
 /***/ }),
 
-/***/ "./server/src/models/db/mongo/UserModel.ts":
-/*!*************************************************!*\
-  !*** ./server/src/models/db/mongo/UserModel.ts ***!
-  \*************************************************/
+/***/ "./server/src/models/db/mongo/UserDocument.ts":
+/*!****************************************************!*\
+  !*** ./server/src/models/db/mongo/UserDocument.ts ***!
+  \****************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -782,15 +779,17 @@ class UserDocument extends BaseDocument_1.BaseDocument {
                 ref: 'Group',
                 required: true,
             },
-            permissions: {
-                type: Number
+            allowedServices: {
+                type: [{
+                        method: String,
+                        path: String
+                    }]
+            },
+            allowedRoutes: {
+                type: [String]
             }
         };
-        this.methods = {
-            test: () => {
-                return 1;
-            }
-        };
+        this.methods = {};
     }
 }
 exports.User = ((new UserDocument()).model());
@@ -867,20 +866,20 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const AppRoute_1 = __webpack_require__(/*! ./../core/routing/AppRoute */ "./server/src/core/routing/AppRoute.ts");
-const GroupModel_1 = __webpack_require__(/*! ./../models/db/mongo/GroupModel */ "./server/src/models/db/mongo/GroupModel.ts");
+const GroupDocument_1 = __webpack_require__(/*! ./../models/db/mongo/GroupDocument */ "./server/src/models/db/mongo/GroupDocument.ts");
 const AppMongoError_1 = __webpack_require__(/*! ./../errors/AppMongoError */ "./server/src/errors/AppMongoError.ts");
 class GroupRoute extends AppRoute_1.default {
     constructor() {
         super(...arguments);
-        this.path = '/group/';
+        this.path = '/group/:id?';
     }
     post(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                let group = new GroupModel_1.Group();
-                group.name = 'newbie';
-                group.allowedServices = ['get:/user/{{sub}}'];
-                group.allowedRoutes = ['profile', 'favorites'];
+                let group = new GroupDocument_1.Group();
+                group.name = req.body.name;
+                group.allowedRoutes = req.body.allowedRoutes;
+                group.allowedServices = req.body.allowedServices;
                 yield group.save();
                 return res.json({
                     success: 'Group Saved',
@@ -888,7 +887,7 @@ class GroupRoute extends AppRoute_1.default {
                 });
             }
             catch (err) {
-                return res.json(AppMongoError_1.appMongoError.get());
+                return res.json(AppMongoError_1.appMongoError.parse(err).get());
             }
         });
     }
@@ -918,12 +917,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const AppRoute_1 = __webpack_require__(/*! ./../core/routing/AppRoute */ "./server/src/core/routing/AppRoute.ts");
-const UserModel_1 = __webpack_require__(/*! ./../models/db/mongo/UserModel */ "./server/src/models/db/mongo/UserModel.ts");
+const UserDocument_1 = __webpack_require__(/*! ./../models/db/mongo/UserDocument */ "./server/src/models/db/mongo/UserDocument.ts");
 const AppMongoError_1 = __webpack_require__(/*! ./../errors/AppMongoError */ "./server/src/errors/AppMongoError.ts");
 const AppUnknownUserError_1 = __webpack_require__(/*! ./../errors/AppUnknownUserError */ "./server/src/errors/AppUnknownUserError.ts");
 const AppUnknownGroupError_1 = __webpack_require__(/*! ./../errors/AppUnknownGroupError */ "./server/src/errors/AppUnknownGroupError.ts");
-const GroupModel_1 = __webpack_require__(/*! ../models/db/mongo/GroupModel */ "./server/src/models/db/mongo/GroupModel.ts");
-const connection_1 = __webpack_require__(/*! ../core/models/db/mongo/connection */ "./server/src/core/models/db/mongo/connection.ts");
+const GroupDocument_1 = __webpack_require__(/*! ../models/db/mongo/GroupDocument */ "./server/src/models/db/mongo/GroupDocument.ts");
 class UserRoute extends AppRoute_1.default {
     constructor() {
         super(...arguments);
@@ -932,13 +930,12 @@ class UserRoute extends AppRoute_1.default {
     get(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const user = yield UserModel_1.User.findOne({
+                const user = yield UserDocument_1.User.findOne({
                     username: req.params.name || ''
-                });
+                }).populate('group');
                 if (!user)
                     return res.json(AppUnknownUserError_1.appUnknownUserError.get());
                 else {
-                    user.populate('group');
                     return res.json({
                         handshake: 'Hi, ' + user.username,
                         group: user.group.name,
@@ -954,15 +951,15 @@ class UserRoute extends AppRoute_1.default {
     post(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const group = yield GroupModel_1.Group.findOne({
-                    _id: connection_1.mongoose.Types.ObjectId(req.body.group)
+                const group = yield GroupDocument_1.Group.findOne({
+                    name: req.body.group
                 });
                 if (!group)
                     return res.json(AppUnknownGroupError_1.appUnknownGroupError.get());
-                let user = new UserModel_1.User();
+                let user = new UserDocument_1.User();
                 user.username = req.body.username;
                 user.password = req.body.password;
-                user.group = group;
+                user.group = group._id;
                 yield user.save();
                 return res.json({
                     handshake: 'Hi, ' + user.username + ' welcome aboard',
