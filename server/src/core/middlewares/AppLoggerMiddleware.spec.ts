@@ -2,9 +2,9 @@ import { Response, Request, Express, NextFunction } from 'express';
 import * as sinon from 'sinon';
 import 'mocha';  
 import { SinonStub } from 'sinon';
-import { mongoose } from './../core/models/db/mongo/connection';
+import { mongoose } from './../models/db/mongo/connection';
 import { appLoggerMiddleware } from './AppLoggerMiddleware'
-import { logger } from '../core/lib/AppLogger';
+import { logger } from './../lib/AppLogger';
 import { LoggerInstance } from 'winston';
 
 describe('Middleware: AppLoggerMiddleware', () => {

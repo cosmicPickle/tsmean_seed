@@ -1,6 +1,6 @@
 import { Document, Model } from "mongoose";
-import { BaseDocument } from "../../../core/models/db/mongo/BaseDocument";
-import { AppServicePath } from "../../../core/models/AppServicePath";
+import { BaseDocument } from "./BaseDocument";
+import { AppServicePath } from "./../../AppServicePath";
 
 export interface IGroup extends Document {
     name: string;

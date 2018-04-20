@@ -1,8 +1,8 @@
 import { Document, Model, Schema } from "mongoose";
-import { BaseDocument } from "../../../core/models/db/mongo/BaseDocument";
+import { BaseDocument } from "./BaseDocument";
 import { userUsernameValidator } from './validators/UserUsernameValidator';
 import { IGroup, Group } from './GroupDocument';
-import { AppServicePath } from './../../../core/models/AppServicePath';
+import { AppServicePath } from './../../AppServicePath';
 
 export interface IUser extends Document {
     username: string;

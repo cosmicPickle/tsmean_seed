@@ -1,5 +1,5 @@
-import { AppMiddlewareFunction } from "../core/middlewares/AppMiddleware";
-import { logger } from "../core/lib/AppLogger";
+import { AppMiddlewareFunction } from "../middlewares/AppMiddleware";
+import { logger } from "../lib/AppLogger";
 
 export class AppLoggerMiddleware {
     log: AppMiddlewareFunction  = (req, res, next)  => {

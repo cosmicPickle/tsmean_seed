@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import AppRoute from './../core/routing/AppRoute';
-import { Group } from './../models/db/mongo/GroupDocument';
-import { appMongoError } from './../errors/AppMongoError'
-import { appUnknownUserError } from './../errors/AppUnknownUserError'
+import { Group } from './../core/models/db/mongo/GroupDocument';
+import { appMongoError } from './../core/errors/AppMongoError'
+import { appUnknownUserError } from './../core/errors/AppUnknownUserError'
 import { AppServicePath } from '../core/models/AppServicePath';
 import { logger } from '../core/lib/AppLogger';
 export class GroupRoute extends AppRoute {

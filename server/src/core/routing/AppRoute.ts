@@ -1,4 +1,4 @@
-import { appInvalidRouteError } from './../../errors/AppInvalidRouteError';
+import { appInvalidRouteError } from './../errors/AppInvalidRouteError';
 import { Request, Response, Router } from 'express';
 import { AppMiddlewareMethod} from './../middlewares/AppMiddleware'
 import middlewaresConfig from './../../configuration/middlewares/middlewaresConfig';

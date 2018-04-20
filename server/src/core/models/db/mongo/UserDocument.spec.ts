@@ -1,7 +1,7 @@
 import * as sinon from 'sinon';
 import 'mocha';  
 import { SinonStub } from 'sinon';
-import { mongoose } from './../../../core/models/db/mongo/connection';
+import { mongoose } from './connection';
 import { User } from './UserDocument';
 import { expect } from 'chai';
 import { Group, IGroup } from './GroupDocument';

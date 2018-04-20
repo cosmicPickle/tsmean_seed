@@ -3,12 +3,12 @@ import * as sinon from 'sinon';
 import { SinonStub } from 'sinon';
 import * as chai from 'chai';
 
-import { mongoose } from './../core/models/db/mongo/connection';
+import { mongoose } from './../models/db/mongo/connection';
 import { appAuthenticateMiddleware } from './AppAuthenticateMiddleware';
 import { appAuthorizationError } from '../errors/AppAuthorizationError';
 import * as jwt from 'jsonwebtoken';
-import config from './../configuration/general'
-import { AppToken, AppTokenPayload, AppTokenOptions } from './../core/models/AppToken';
+import config from './../../configuration/general'
+import { AppToken, AppTokenPayload, AppTokenOptions } from './../models/AppToken';
 
 describe('Middleware: AppAuthenticateMiddleware', () => {
 

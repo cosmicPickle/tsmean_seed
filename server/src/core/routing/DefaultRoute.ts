@@ -1,4 +1,4 @@
-import AppRoute from './../core/routing/AppRoute';
+import AppRoute from './AppRoute';
 
 export class DefaultRoute extends AppRoute {
     protected path = '/'

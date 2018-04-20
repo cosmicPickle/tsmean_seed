@@ -1,11 +1,11 @@
-import { AppMiddlewareFunction } from "../core/middlewares/AppMiddleware";
+import { AppMiddlewareFunction } from "../middlewares/AppMiddleware";
 import { appAuthorizationError } from "../errors/AppAuthorizationError";
 import { appGeneralError } from "../errors/AppGeneralError";
 import * as jwt from 'jsonwebtoken';
-import config from './../configuration/general';
-import { AppTokenPayload, AppToken } from "../core/models/AppToken";
-import { appGuard } from "../core/lib/AppGuard";
-import { logger } from "../core/lib/AppLogger";
+import config from './../../configuration/general';
+import { AppTokenPayload, AppToken } from "../models/AppToken";
+import { appGuard } from "../lib/AppGuard";
+import { logger } from "../lib/AppLogger";
 
 
 export class AppAuthenticateMiddleware {

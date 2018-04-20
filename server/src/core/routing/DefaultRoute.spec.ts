@@ -4,7 +4,7 @@ import { Response, Request, Express } from 'express';
 import * as sinon from 'sinon';
 import 'mocha';  
 import { SinonStub } from 'sinon';
-import { mongoose } from '../core/models/db/mongo/connection';
+import { mongoose } from '../models/db/mongo/connection';
 import { AppInvalidRouteError } from '../errors/AppInvalidRouteError';
 
 const dfr = new DefaultRoute();

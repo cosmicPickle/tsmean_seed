@@ -5,12 +5,12 @@ import 'mocha';
 import { SinonStub } from 'sinon';
 
 import { mongoose } from '../core/models/db/mongo/connection';
-import { User, IUser } from '../models/db/mongo/UserDocument';
-import { appUnknownUserError } from '../errors/AppUnknownUserError';
-import { appMongoError } from '../errors/AppMongoError';
-import { appLoggerMiddleware } from '../middlewares/AppLoggerMiddleware';
-import { appAuthenticateMiddleware } from '../middlewares/AppAuthenticateMiddleware';
-import { IGroup, Group } from '../models/db/mongo/GroupDocument';
+import { User, IUser } from '../core/models/db/mongo/UserDocument';
+import { appUnknownUserError } from '../core/errors/AppUnknownUserError';
+import { appMongoError } from '../core/errors/AppMongoError';
+import { appLoggerMiddleware } from '../core/middlewares/AppLoggerMiddleware';
+import { appAuthenticateMiddleware } from '../core/middlewares/AppAuthenticateMiddleware';
+import { IGroup, Group } from '../core/models/db/mongo/GroupDocument';
 import { Model } from 'mongoose';
 
 describe('class UserRoute', () => {

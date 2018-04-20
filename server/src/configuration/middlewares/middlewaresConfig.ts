@@ -1,7 +1,7 @@
 import * as bodyParser from 'body-parser';
 import { AppMiddlewares } from './../../core/middlewares/AppMiddleware';
-import { appLoggerMiddleware } from './../../middlewares/AppLoggerMiddleware';
-import { appAuthenticateMiddleware } from './../../middlewares/AppAuthenticateMiddleware';
+import { appLoggerMiddleware } from './../../core/middlewares/AppLoggerMiddleware';
+import { appAuthenticateMiddleware } from './../../core/middlewares/AppAuthenticateMiddleware';
 
 export const middlewares: AppMiddlewares= {
     _: [

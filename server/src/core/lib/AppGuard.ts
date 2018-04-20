@@ -1,6 +1,6 @@
 import * as pathToRegexp from 'path-to-regexp'
 import { Request } from 'express';
-import { User } from './../../models/db/mongo/UserDocument'
+import { User } from './../models/db/mongo/UserDocument'
 import { mongoose } from '../models/db/mongo/connection';
 import { AppServicePath } from '../models/AppServicePath';
 export class AppGuard {

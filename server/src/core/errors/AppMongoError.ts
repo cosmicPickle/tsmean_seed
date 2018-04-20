@@ -1,4 +1,4 @@
-import { AppError } from '../core/errors/AppError';
+import { AppError } from './AppError';
 
 interface IMongoError extends Error {
     errors: Object 

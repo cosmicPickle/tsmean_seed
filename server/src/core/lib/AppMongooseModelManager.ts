@@ -1,5 +1,5 @@
 import { mongoose } from './../models/db/mongo/connection'
-import { IBaseModel } from '../models/db/mongo/BaseDocument';
+import { IBaseModel } from './../models/db/mongo/BaseDocument';
 import { logger } from './AppLogger';
 export class AppMongooseModelManager {
     private __models: IBaseModel<any>[] = [];
