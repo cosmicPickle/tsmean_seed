@@ -3,12 +3,16 @@ import { Request } from 'express';
 import { User } from './../models/db/mongo/UserDocument'
 import { mongoose } from '../models/db/mongo/connection';
 import { AppServicePath } from '../models/AppServicePath';
+import { logger } from './AppLogger';
 export class AppGuard {
 
     private _checkServices(services: AppServicePath[], controlMethod: string, controlUrl: string): boolean {
         return services.some((service) => {
+            
             if(service.method.toLowerCase() === controlMethod.toLowerCase()
-                && pathToRegexp(service.path).test(controlUrl)) {
+                && (service.path == controlUrl 
+                    || pathToRegexp(service.path).test(controlUrl)
+                )) {
                     return true;
             }
 
@@ -18,7 +22,7 @@ export class AppGuard {
 
     private _checkRoutes(routes: string[], controlUrl: string): boolean {
         return routes.some(route => {
-            if(route === controlUrl) {
+            if(route === controlUrl || pathToRegexp(route).test(controlUrl)) {
                 return true;
             }
             return false;
@@ -59,13 +63,11 @@ export class AppGuard {
         if(!req.body.__djwt.scopes || !req.body.__djwt.scopes.routes) {
             let user = await User.findOne({
                 _id: mongoose.Types.ObjectId(req.body.__djwt.sub)
-            });
+            }).populate('group');
 
             if(!user)
                 return false;
-            
-            await user.populate('group');
-
+                
             if(this._checkRoutes(user.allowedRoutes, req.url)) {
                 return true;
             }
