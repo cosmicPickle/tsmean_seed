@@ -385,6 +385,7 @@ class AppLogger {
         return this.__winston;
     }
 }
+exports.AppLogger = AppLogger;
 exports.logger = new AppLogger().logger();
 
 

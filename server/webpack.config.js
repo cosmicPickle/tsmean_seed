@@ -30,7 +30,7 @@ module.exports = {
     module: {
         rules: [
             {
-                test: /\.tsx?$/,
+                test: /^(?!.*spec\.tsx?$).*\.tsx?$/,
                 use: [{ loader: 'ts-loader' }]
             }
         ]

@@ -1,7 +1,7 @@
 
 import * as winston from 'winston';
 
-class AppLogger {
+export class AppLogger {
     private __winston;
     private __transportsDev: winston.TransportInstance[] = [
         new winston.transports.Console({
