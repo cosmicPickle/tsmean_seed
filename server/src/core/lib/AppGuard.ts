@@ -41,6 +41,8 @@ export class AppGuard {
             if(!user)
                 return false;
 
+            req.body.__djwt.scopes.services = [...user.allowedServices, ...user.group.allowedServices];
+
             if(this._checkServices(user.allowedServices, req.method, req.url)) {
                 return true;
             }
@@ -48,8 +50,7 @@ export class AppGuard {
             if(this._checkServices(user.group.allowedServices, req.method, req.url)) {
                 return true;
             }
-
-            req.body.__djwt.scopes.services = [...user.allowedServices, user.group.allowedServices];
+            
             return false;
         } else {
             return this._checkServices(req.body.__djwt.scopes.services, req.method, req.url);
@@ -63,23 +64,24 @@ export class AppGuard {
         if(!req.body.__djwt.scopes || !req.body.__djwt.scopes.routes) {
             let user = await User.findOne({
                 _id: mongoose.Types.ObjectId(req.body.__djwt.sub)
-            }).populate('group');
+            }).populate('group').exec();
 
             if(!user)
                 return false;
                 
-            if(this._checkRoutes(user.allowedRoutes, req.url)) {
+            if(this._checkRoutes(user.allowedRoutes, req.body.route)) {
                 return true;
             }
 
-            if(this._checkRoutes(user.group.allowedRoutes, req.url)) {
+            if(this._checkRoutes(user.group.allowedRoutes, req.body.route)) {
                 return true;
             }
 
-            req.body.__djwt.scopes.routes = [...user.allowedServices, user.group.allowedServices];
+            req.body.__djwt.scopes.routes = [...user.allowedRoutes, ...user.group.allowedRoutes];
+            
             return false;
         } else {
-            return this._checkServices(req.body.__djwt.scopes.group.allowedServices, req.method, req.url);
+            return this._checkRoutes(req.body.__djwt.scopes.routes, req.body.route);
         }
     }
 

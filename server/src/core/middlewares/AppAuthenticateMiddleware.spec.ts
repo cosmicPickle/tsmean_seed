@@ -9,6 +9,7 @@ import { appAuthorizationError } from '../errors/AppAuthorizationError';
 import * as jwt from 'jsonwebtoken';
 import config from './../../configuration/general'
 import { AppToken, AppTokenPayload, AppTokenOptions } from './../models/AppToken';
+import { appGuard } from '../lib/AppGuard';
 
 describe('Middleware: AppAuthenticateMiddleware', () => {
 
@@ -34,7 +35,7 @@ describe('Middleware: AppAuthenticateMiddleware', () => {
         });
 
 
-        it('should return authorization error if invalid token is provided', () => {
+        it('should return authorization error if invalid token is provided',async () => {
 
             let req: Partial<Request> = {
                 method: 'get',
@@ -50,7 +51,10 @@ describe('Middleware: AppAuthenticateMiddleware', () => {
             };
             let next: NextFunction = sinon.stub();
 
-            appAuthenticateMiddleware.check(<Request>req, <Response>res, next);
+            let appGuardServiceStub = sinon.stub(appGuard, 'service').resolves(false);
+            await appAuthenticateMiddleware.check(<Request>req, <Response>res, next);
+            (appGuard.service as SinonStub).restore();
+            
             sinon.assert.calledWith(res.json as SinonStub, appAuthorizationError.get());
             sinon.assert.notCalled(next as SinonStub);
         });
@@ -92,7 +96,11 @@ describe('Middleware: AppAuthenticateMiddleware', () => {
             };
             let next: NextFunction = sinon.stub();
 
+            let appGuardServiceStub = sinon.stub(appGuard, 'service').resolves(true);
+
             await appAuthenticateMiddleware.check(<Request>req, <Response>res, next);
+            (appGuard.service as SinonStub).restore();
+
             sinon.assert.notCalled(res.json as SinonStub);
             sinon.assert.called(next as SinonStub);
             chai.expect(req.body.__djwt.sub).to.eq(username);

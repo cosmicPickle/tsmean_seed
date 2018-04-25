@@ -145,7 +145,7 @@ exports.default = exports.mongoConfig;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const bodyParser = __webpack_require__(/*! body-parser */ "body-parser");
-const AppLoggerMiddleware_1 = __webpack_require__(/*! ./../../middlewares/AppLoggerMiddleware */ "./server/src/middlewares/AppLoggerMiddleware.ts");
+const AppLoggerMiddleware_1 = __webpack_require__(/*! ./../../core/middlewares/AppLoggerMiddleware */ "./server/src/core/middlewares/AppLoggerMiddleware.ts");
 exports.middlewares = {
     _: [
         bodyParser.urlencoded({ extended: true }),
@@ -174,7 +174,7 @@ exports.default = exports.middlewares;
 Object.defineProperty(exports, "__esModule", { value: true });
 const UserRoute_1 = __webpack_require__(/*! ./../../routes/UserRoute */ "./server/src/routes/UserRoute.ts");
 const GroupRoute_1 = __webpack_require__(/*! ./../../routes/GroupRoute */ "./server/src/routes/GroupRoute.ts");
-const DefaultRoute_1 = __webpack_require__(/*! ./../../routes/DefaultRoute */ "./server/src/routes/DefaultRoute.ts");
+const DefaultRoute_1 = __webpack_require__(/*! ./../../core/routing/DefaultRoute */ "./server/src/core/routing/DefaultRoute.ts");
 exports.routesConfig = [
     DefaultRoute_1.defaultRoute,
     UserRoute_1.userRoute,
@@ -206,6 +206,130 @@ class AppError {
 }
 exports.AppError = AppError;
 exports.default = AppError;
+
+
+/***/ }),
+
+/***/ "./server/src/core/errors/AppInvalidRouteError.ts":
+/*!********************************************************!*\
+  !*** ./server/src/core/errors/AppInvalidRouteError.ts ***!
+  \********************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const AppError_1 = __webpack_require__(/*! ./AppError */ "./server/src/core/errors/AppError.ts");
+class AppInvalidRouteError extends AppError_1.AppError {
+    constructor() {
+        super(...arguments);
+        this.code = 1004;
+        this.message = "Invalid Route";
+    }
+}
+exports.AppInvalidRouteError = AppInvalidRouteError;
+exports.appInvalidRouteError = new AppInvalidRouteError();
+
+
+/***/ }),
+
+/***/ "./server/src/core/errors/AppMongoError.ts":
+/*!*************************************************!*\
+  !*** ./server/src/core/errors/AppMongoError.ts ***!
+  \*************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const AppError_1 = __webpack_require__(/*! ./AppError */ "./server/src/core/errors/AppError.ts");
+class AppMongoError extends AppError_1.AppError {
+    constructor() {
+        super(...arguments);
+        this.code = 1001;
+        this.message = "";
+    }
+    parse(err) {
+        if (err.errors) {
+            this.message = "mongoose_validation_error";
+            this.payload = {
+                invalid: Object.keys(err.errors).map((key) => {
+                    const e = err.errors[key];
+                    return {
+                        kind: e.kind,
+                        path: e.path,
+                        message: e.message,
+                        value: e.value
+                    };
+                })
+            };
+        }
+        else if (err.message.indexOf('duplicate key error') !== -1) {
+            this.message = "mongoose_duplicate_key_error";
+        }
+        else {
+            this.message = "mongoose_error";
+            if (true) {
+                this.payload = {
+                    debug: err.message
+                };
+            }
+        }
+        return this;
+    }
+}
+exports.AppMongoError = AppMongoError;
+exports.appMongoError = new AppMongoError();
+
+
+/***/ }),
+
+/***/ "./server/src/core/errors/AppUnknownGroupError.ts":
+/*!********************************************************!*\
+  !*** ./server/src/core/errors/AppUnknownGroupError.ts ***!
+  \********************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const AppError_1 = __webpack_require__(/*! ./AppError */ "./server/src/core/errors/AppError.ts");
+class AppUnknownGroupError extends AppError_1.AppError {
+    constructor() {
+        super(...arguments);
+        this.code = 1005;
+        this.message = "Unknown group";
+    }
+}
+exports.AppUnknownGroupError = AppUnknownGroupError;
+exports.appUnknownGroupError = new AppUnknownGroupError;
+
+
+/***/ }),
+
+/***/ "./server/src/core/errors/AppUnknownUserError.ts":
+/*!*******************************************************!*\
+  !*** ./server/src/core/errors/AppUnknownUserError.ts ***!
+  \*******************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const AppError_1 = __webpack_require__(/*! ./AppError */ "./server/src/core/errors/AppError.ts");
+class AppUnknownUserError extends AppError_1.AppError {
+    constructor() {
+        super(...arguments);
+        this.code = 1002;
+        this.message = "Unknown user";
+    }
+}
+exports.AppUnknownUserError = AppUnknownUserError;
+exports.appUnknownUserError = new AppUnknownUserError;
 
 
 /***/ }),
@@ -337,6 +461,31 @@ exports.Q = Q;
 
 /***/ }),
 
+/***/ "./server/src/core/middlewares/AppLoggerMiddleware.ts":
+/*!************************************************************!*\
+  !*** ./server/src/core/middlewares/AppLoggerMiddleware.ts ***!
+  \************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const AppLogger_1 = __webpack_require__(/*! ../lib/AppLogger */ "./server/src/core/lib/AppLogger.ts");
+class AppLoggerMiddleware {
+    constructor() {
+        this.log = (req, res, next) => {
+            AppLogger_1.logger.debug(`Request ${req.method.toUpperCase()} ${req.path}: ${JSON.stringify(req.params)}`);
+            next();
+        };
+    }
+}
+exports.AppLoggerMiddleware = AppLoggerMiddleware;
+exports.appLoggerMiddleware = new AppLoggerMiddleware();
+
+
+/***/ }),
+
 /***/ "./server/src/core/models/db/mongo/BaseDocument.ts":
 /*!*********************************************************!*\
   !*** ./server/src/core/models/db/mongo/BaseDocument.ts ***!
@@ -380,6 +529,98 @@ class BaseDocument {
 }
 exports.BaseDocument = BaseDocument;
 exports.default = BaseDocument;
+
+
+/***/ }),
+
+/***/ "./server/src/core/models/db/mongo/GroupDocument.ts":
+/*!**********************************************************!*\
+  !*** ./server/src/core/models/db/mongo/GroupDocument.ts ***!
+  \**********************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const BaseDocument_1 = __webpack_require__(/*! ./BaseDocument */ "./server/src/core/models/db/mongo/BaseDocument.ts");
+class GroupDocument extends BaseDocument_1.BaseDocument {
+    constructor() {
+        super(...arguments);
+        this.name = 'Group';
+        this.schema = {
+            name: {
+                type: String,
+                required: true,
+                unique: true
+            },
+            allowedServices: {
+                type: [{
+                        method: String,
+                        path: String
+                    }]
+            },
+            allowedRoutes: {
+                type: [String]
+            }
+        };
+        this.methods = {};
+    }
+}
+exports.Group = ((new GroupDocument()).model());
+exports.default = exports.Group;
+
+
+/***/ }),
+
+/***/ "./server/src/core/models/db/mongo/UserDocument.ts":
+/*!*********************************************************!*\
+  !*** ./server/src/core/models/db/mongo/UserDocument.ts ***!
+  \*********************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
+const BaseDocument_1 = __webpack_require__(/*! ./BaseDocument */ "./server/src/core/models/db/mongo/BaseDocument.ts");
+const UserUsernameValidator_1 = __webpack_require__(/*! ./validators/UserUsernameValidator */ "./server/src/core/models/db/mongo/validators/UserUsernameValidator.ts");
+class UserDocument extends BaseDocument_1.BaseDocument {
+    constructor() {
+        super(...arguments);
+        this.name = 'User';
+        this.schema = {
+            username: {
+                type: String,
+                required: true,
+                unique: true,
+                validate: UserUsernameValidator_1.userUsernameValidator.use()
+            },
+            password: {
+                type: String,
+                required: true
+            },
+            group: {
+                type: mongoose_1.Schema.Types.ObjectId,
+                ref: 'Group',
+                required: true,
+            },
+            allowedServices: {
+                type: [{
+                        method: String,
+                        path: String
+                    }]
+            },
+            allowedRoutes: {
+                type: [String]
+            }
+        };
+        this.methods = {};
+    }
+}
+exports.User = ((new UserDocument()).model());
+exports.default = exports.User;
 
 
 /***/ }),
@@ -434,6 +675,32 @@ exports.default = BaseValidator;
 
 /***/ }),
 
+/***/ "./server/src/core/models/db/mongo/validators/UserUsernameValidator.ts":
+/*!*****************************************************************************!*\
+  !*** ./server/src/core/models/db/mongo/validators/UserUsernameValidator.ts ***!
+  \*****************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const BaseValidator_1 = __webpack_require__(/*! ./BaseValidator */ "./server/src/core/models/db/mongo/validators/BaseValidator.ts");
+class UserUsernameValidator extends BaseValidator_1.default {
+    constructor() {
+        super(...arguments);
+        this.message = "error_validation_user_username";
+    }
+    validator(v) {
+        return (/^([a-zA-z])*$/).test(v);
+    }
+}
+exports.UserUsernameValidator = UserUsernameValidator;
+exports.userUsernameValidator = new UserUsernameValidator();
+
+
+/***/ }),
+
 /***/ "./server/src/core/routing/AppRoute.ts":
 /*!*********************************************!*\
   !*** ./server/src/core/routing/AppRoute.ts ***!
@@ -444,7 +711,7 @@ exports.default = BaseValidator;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const AppInvalidRouteError_1 = __webpack_require__(/*! ./../../errors/AppInvalidRouteError */ "./server/src/errors/AppInvalidRouteError.ts");
+const AppInvalidRouteError_1 = __webpack_require__(/*! ./../errors/AppInvalidRouteError */ "./server/src/core/errors/AppInvalidRouteError.ts");
 const middlewaresConfig_1 = __webpack_require__(/*! ./../../configuration/middlewares/middlewaresConfig */ "./server/src/configuration/middlewares/middlewaresConfig.ts");
 class AppRoute {
     constructor() { }
@@ -513,126 +780,25 @@ exports.default = AppRoutesRegistry;
 
 /***/ }),
 
-/***/ "./server/src/errors/AppInvalidRouteError.ts":
-/*!***************************************************!*\
-  !*** ./server/src/errors/AppInvalidRouteError.ts ***!
-  \***************************************************/
+/***/ "./server/src/core/routing/DefaultRoute.ts":
+/*!*************************************************!*\
+  !*** ./server/src/core/routing/DefaultRoute.ts ***!
+  \*************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const AppError_1 = __webpack_require__(/*! ../core/errors/AppError */ "./server/src/core/errors/AppError.ts");
-class AppInvalidRouteError extends AppError_1.AppError {
+const AppRoute_1 = __webpack_require__(/*! ./AppRoute */ "./server/src/core/routing/AppRoute.ts");
+class DefaultRoute extends AppRoute_1.default {
     constructor() {
         super(...arguments);
-        this.code = 1004;
-        this.message = "Invalid Route";
+        this.path = '/';
     }
 }
-exports.AppInvalidRouteError = AppInvalidRouteError;
-exports.appInvalidRouteError = new AppInvalidRouteError();
-
-
-/***/ }),
-
-/***/ "./server/src/errors/AppMongoError.ts":
-/*!********************************************!*\
-  !*** ./server/src/errors/AppMongoError.ts ***!
-  \********************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const AppError_1 = __webpack_require__(/*! ../core/errors/AppError */ "./server/src/core/errors/AppError.ts");
-class AppMongoError extends AppError_1.AppError {
-    constructor() {
-        super(...arguments);
-        this.code = 1001;
-        this.message = "";
-    }
-    parse(err) {
-        if (err.errors) {
-            this.message = "mongoose_validation_error";
-            this.payload = {
-                invalid: Object.keys(err.errors).map((key) => {
-                    const e = err.errors[key];
-                    return {
-                        kind: e.kind,
-                        path: e.path,
-                        message: e.message,
-                        value: e.value
-                    };
-                })
-            };
-        }
-        else if (err.message.indexOf('duplicate key error') !== -1) {
-            this.message = "mongoose_duplicate_key_error";
-        }
-        else {
-            this.message = "mongoose_error";
-            if (true) {
-                this.payload = {
-                    debug: err.message
-                };
-            }
-        }
-        return this;
-    }
-}
-exports.AppMongoError = AppMongoError;
-exports.appMongoError = new AppMongoError();
-
-
-/***/ }),
-
-/***/ "./server/src/errors/AppUnknownGroupError.ts":
-/*!***************************************************!*\
-  !*** ./server/src/errors/AppUnknownGroupError.ts ***!
-  \***************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const AppError_1 = __webpack_require__(/*! ../core/errors/AppError */ "./server/src/core/errors/AppError.ts");
-class AppUnknownGroupError extends AppError_1.AppError {
-    constructor() {
-        super(...arguments);
-        this.code = 1005;
-        this.message = "Unknown group";
-    }
-}
-exports.AppUnknownGroupError = AppUnknownGroupError;
-exports.appUnknownGroupError = new AppUnknownGroupError;
-
-
-/***/ }),
-
-/***/ "./server/src/errors/AppUnknownUserError.ts":
-/*!**************************************************!*\
-  !*** ./server/src/errors/AppUnknownUserError.ts ***!
-  \**************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const AppError_1 = __webpack_require__(/*! ../core/errors/AppError */ "./server/src/core/errors/AppError.ts");
-class AppUnknownUserError extends AppError_1.AppError {
-    constructor() {
-        super(...arguments);
-        this.code = 1002;
-        this.message = "Unknown user";
-    }
-}
-exports.AppUnknownUserError = AppUnknownUserError;
-exports.appUnknownUserError = new AppUnknownUserError;
+exports.DefaultRoute = DefaultRoute;
+exports.defaultRoute = new DefaultRoute();
 
 
 /***/ }),
@@ -681,172 +847,6 @@ exports.server = start();
 
 /***/ }),
 
-/***/ "./server/src/middlewares/AppLoggerMiddleware.ts":
-/*!*******************************************************!*\
-  !*** ./server/src/middlewares/AppLoggerMiddleware.ts ***!
-  \*******************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const AppLogger_1 = __webpack_require__(/*! ../core/lib/AppLogger */ "./server/src/core/lib/AppLogger.ts");
-class AppLoggerMiddleware {
-    constructor() {
-        this.log = (req, res, next) => {
-            AppLogger_1.logger.debug(`Request ${req.method.toUpperCase()} ${req.path}: ${JSON.stringify(req.params)}`);
-            next();
-        };
-    }
-}
-exports.AppLoggerMiddleware = AppLoggerMiddleware;
-exports.appLoggerMiddleware = new AppLoggerMiddleware();
-
-
-/***/ }),
-
-/***/ "./server/src/models/db/mongo/GroupDocument.ts":
-/*!*****************************************************!*\
-  !*** ./server/src/models/db/mongo/GroupDocument.ts ***!
-  \*****************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const BaseDocument_1 = __webpack_require__(/*! ../../../core/models/db/mongo/BaseDocument */ "./server/src/core/models/db/mongo/BaseDocument.ts");
-class GroupDocument extends BaseDocument_1.BaseDocument {
-    constructor() {
-        super(...arguments);
-        this.name = 'Group';
-        this.schema = {
-            name: {
-                type: String,
-                required: true,
-                unique: true
-            },
-            allowedServices: {
-                type: [{
-                        method: String,
-                        path: String
-                    }]
-            },
-            allowedRoutes: {
-                type: [String]
-            }
-        };
-        this.methods = {};
-    }
-}
-exports.Group = ((new GroupDocument()).model());
-exports.default = exports.Group;
-
-
-/***/ }),
-
-/***/ "./server/src/models/db/mongo/UserDocument.ts":
-/*!****************************************************!*\
-  !*** ./server/src/models/db/mongo/UserDocument.ts ***!
-  \****************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
-const BaseDocument_1 = __webpack_require__(/*! ../../../core/models/db/mongo/BaseDocument */ "./server/src/core/models/db/mongo/BaseDocument.ts");
-const UserUsernameValidator_1 = __webpack_require__(/*! ./validators/UserUsernameValidator */ "./server/src/models/db/mongo/validators/UserUsernameValidator.ts");
-class UserDocument extends BaseDocument_1.BaseDocument {
-    constructor() {
-        super(...arguments);
-        this.name = 'User';
-        this.schema = {
-            username: {
-                type: String,
-                required: true,
-                unique: true,
-                validate: UserUsernameValidator_1.userUsernameValidator.use()
-            },
-            password: {
-                type: String,
-                required: true
-            },
-            group: {
-                type: mongoose_1.Schema.Types.ObjectId,
-                ref: 'Group',
-                required: true,
-            },
-            allowedServices: {
-                type: [{
-                        method: String,
-                        path: String
-                    }]
-            },
-            allowedRoutes: {
-                type: [String]
-            }
-        };
-        this.methods = {};
-    }
-}
-exports.User = ((new UserDocument()).model());
-exports.default = exports.User;
-
-
-/***/ }),
-
-/***/ "./server/src/models/db/mongo/validators/UserUsernameValidator.ts":
-/*!************************************************************************!*\
-  !*** ./server/src/models/db/mongo/validators/UserUsernameValidator.ts ***!
-  \************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const BaseValidator_1 = __webpack_require__(/*! ../../../../core/models/db/mongo/validators/BaseValidator */ "./server/src/core/models/db/mongo/validators/BaseValidator.ts");
-class UserUsernameValidator extends BaseValidator_1.default {
-    constructor() {
-        super(...arguments);
-        this.message = "error_validation_user_username";
-    }
-    validator(v) {
-        return (/^([a-zA-z])*$/).test(v);
-    }
-}
-exports.UserUsernameValidator = UserUsernameValidator;
-exports.userUsernameValidator = new UserUsernameValidator();
-
-
-/***/ }),
-
-/***/ "./server/src/routes/DefaultRoute.ts":
-/*!*******************************************!*\
-  !*** ./server/src/routes/DefaultRoute.ts ***!
-  \*******************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const AppRoute_1 = __webpack_require__(/*! ./../core/routing/AppRoute */ "./server/src/core/routing/AppRoute.ts");
-class DefaultRoute extends AppRoute_1.default {
-    constructor() {
-        super(...arguments);
-        this.path = '/';
-    }
-}
-exports.DefaultRoute = DefaultRoute;
-exports.defaultRoute = new DefaultRoute();
-
-
-/***/ }),
-
 /***/ "./server/src/routes/GroupRoute.ts":
 /*!*****************************************!*\
   !*** ./server/src/routes/GroupRoute.ts ***!
@@ -866,8 +866,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const AppRoute_1 = __webpack_require__(/*! ./../core/routing/AppRoute */ "./server/src/core/routing/AppRoute.ts");
-const GroupDocument_1 = __webpack_require__(/*! ./../models/db/mongo/GroupDocument */ "./server/src/models/db/mongo/GroupDocument.ts");
-const AppMongoError_1 = __webpack_require__(/*! ./../errors/AppMongoError */ "./server/src/errors/AppMongoError.ts");
+const GroupDocument_1 = __webpack_require__(/*! ./../core/models/db/mongo/GroupDocument */ "./server/src/core/models/db/mongo/GroupDocument.ts");
+const AppMongoError_1 = __webpack_require__(/*! ./../core/errors/AppMongoError */ "./server/src/core/errors/AppMongoError.ts");
 class GroupRoute extends AppRoute_1.default {
     constructor() {
         super(...arguments);
@@ -917,11 +917,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const AppRoute_1 = __webpack_require__(/*! ./../core/routing/AppRoute */ "./server/src/core/routing/AppRoute.ts");
-const UserDocument_1 = __webpack_require__(/*! ./../models/db/mongo/UserDocument */ "./server/src/models/db/mongo/UserDocument.ts");
-const AppMongoError_1 = __webpack_require__(/*! ./../errors/AppMongoError */ "./server/src/errors/AppMongoError.ts");
-const AppUnknownUserError_1 = __webpack_require__(/*! ./../errors/AppUnknownUserError */ "./server/src/errors/AppUnknownUserError.ts");
-const AppUnknownGroupError_1 = __webpack_require__(/*! ./../errors/AppUnknownGroupError */ "./server/src/errors/AppUnknownGroupError.ts");
-const GroupDocument_1 = __webpack_require__(/*! ../models/db/mongo/GroupDocument */ "./server/src/models/db/mongo/GroupDocument.ts");
+const UserDocument_1 = __webpack_require__(/*! ./../core/models/db/mongo/UserDocument */ "./server/src/core/models/db/mongo/UserDocument.ts");
+const AppMongoError_1 = __webpack_require__(/*! ./../core/errors/AppMongoError */ "./server/src/core/errors/AppMongoError.ts");
+const AppUnknownUserError_1 = __webpack_require__(/*! ./../core/errors/AppUnknownUserError */ "./server/src/core/errors/AppUnknownUserError.ts");
+const AppUnknownGroupError_1 = __webpack_require__(/*! ./../core/errors/AppUnknownGroupError */ "./server/src/core/errors/AppUnknownGroupError.ts");
+const GroupDocument_1 = __webpack_require__(/*! ../core/models/db/mongo/GroupDocument */ "./server/src/core/models/db/mongo/GroupDocument.ts");
 class UserRoute extends AppRoute_1.default {
     constructor() {
         super(...arguments);
@@ -932,7 +932,7 @@ class UserRoute extends AppRoute_1.default {
             try {
                 const user = yield UserDocument_1.User.findOne({
                     username: req.params.name || ''
-                }).populate('group');
+                }).populate('group').exec();
                 if (!user)
                     return res.json(AppUnknownUserError_1.appUnknownUserError.get());
                 else {
