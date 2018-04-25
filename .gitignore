@@ -3,3 +3,6 @@
 **/coverage/
 **/dist/*
 /.project
+server/dist/index.js.map
+server/dist/index.js
+logs/app.log
