@@ -1,7 +1,8 @@
 export class AppError {
-    protected code: number
     protected message: string
-    protected payload: object
+    protected payload: any
+
+    constructor(protected code: number) {}
     
     get() {
         return { 

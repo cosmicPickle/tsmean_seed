@@ -9,14 +9,14 @@ export type BaseDocumentMethods = {
 }
 
 export interface IBaseDocument {
-    name: string,
-    schema: any,
+    name: string;
+    schema: any;
     methods?: BaseDocumentMethods;
     statics?: BaseDocumentMethods;
 }
 
 export interface IBaseModel<T extends Document> extends Model<T> {
-    waitIndexesCreated(): Promise<any>
+    waitIndexesCreated(): Promise<any>;
 }
 export class BaseDocument<T extends Document> implements IBaseDocument {
 

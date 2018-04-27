@@ -1,6 +1,6 @@
 import 'mocha';
 import { expect } from 'chai';
-import { appMongoError } from './AppMongoError'
+import { appMongoError } from './../../configuration/errors/errorsConfig';
 
 describe('Error: AppMongoError', () => {
 

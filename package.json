@@ -16,9 +16,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/joi": "^13.0.8",
     "bluebird": "^3.5.1",
     "body-parser": "^1.18.2",
     "express": "^4.16.3",
+    "joi": "^13.2.0",
     "jsonwebtoken": "^8.2.0",
     "mongodb": "^3.0.5",
     "mongoose": "^5.0.11",

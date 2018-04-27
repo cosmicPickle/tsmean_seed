@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
 import AppRoute from './../core/routing/AppRoute';
 import { User } from './../core/models/db/mongo/UserDocument';
-import { appMongoError } from './../core/errors/AppMongoError';
-import { appUnknownUserError } from './../core/errors/AppUnknownUserError';
-import { appUnknownGroupError } from './../core/errors/AppUnknownGroupError';
+import { appMongoError } from './../configuration/errors/errorsConfig';
+import { appUnknownUserError } from './../configuration/errors/errorsConfig';
+import { appUnknownGroupError } from './../configuration/errors/errorsConfig';
 import { Group } from '../core/models/db/mongo/GroupDocument';
 import { mongoose } from '../core/models/db/mongo/connection';
 import { logger } from '../core/lib/AppLogger';

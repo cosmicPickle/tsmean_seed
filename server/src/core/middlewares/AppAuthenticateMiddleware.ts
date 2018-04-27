@@ -1,6 +1,6 @@
 import { AppMiddlewareFunction } from "../middlewares/AppMiddleware";
-import { appAuthorizationError } from "../errors/AppAuthorizationError";
-import { appGeneralError } from "../errors/AppGeneralError";
+import { appAuthorizationError } from "./../../configuration/errors/errorsConfig";
+import { appGeneralError } from "./../../configuration/errors/errorsConfig";
 import * as jwt from 'jsonwebtoken';
 import config from './../../configuration/general';
 import { AppTokenPayload, AppToken } from "../models/AppToken";

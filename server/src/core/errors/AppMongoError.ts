@@ -37,5 +37,3 @@ export class AppMongoError extends AppError {
         return this;
     }
 }
-
-export let appMongoError = new AppMongoError();

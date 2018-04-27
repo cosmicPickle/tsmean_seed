@@ -6,12 +6,13 @@ import { SinonStub } from 'sinon';
 
 import { mongoose } from '../core/models/db/mongo/connection';
 import { User, IUser } from '../core/models/db/mongo/UserDocument';
-import { appUnknownUserError } from '../core/errors/AppUnknownUserError';
-import { appMongoError } from '../core/errors/AppMongoError';
+import { appUnknownUserError } from './../configuration/errors/errorsConfig';
+import { appMongoError } from './../configuration/errors/errorsConfig';
 import { appLoggerMiddleware } from '../core/middlewares/AppLoggerMiddleware';
 import { appAuthenticateMiddleware } from '../core/middlewares/AppAuthenticateMiddleware';
 import { IGroup, Group } from '../core/models/db/mongo/GroupDocument';
 import { Model } from 'mongoose';
+import { userRouteValidatorMiddleware } from '../middlewares/validation/request/UserRouteValidatorMiddleware';
 
 describe('class UserRoute', () => {
 
@@ -20,7 +21,8 @@ describe('class UserRoute', () => {
         let routerGetStub = sinon.stub(router, 'get');
         let path = '/user/:name?';
         let middlewares = [
-            appLoggerMiddleware.log, 
+            userRouteValidatorMiddleware.get,
+            appLoggerMiddleware.log
             //appAuthenticateMiddleware.check
         ];
         

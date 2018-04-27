@@ -5,7 +5,7 @@ import * as chai from 'chai';
 
 import { mongoose } from './../models/db/mongo/connection';
 import { appAuthenticateMiddleware } from './AppAuthenticateMiddleware';
-import { appAuthorizationError } from '../errors/AppAuthorizationError';
+import { appAuthorizationError } from './../../configuration/errors/errorsConfig';
 import * as jwt from 'jsonwebtoken';
 import config from './../../configuration/general'
 import { AppToken, AppTokenPayload, AppTokenOptions } from './../models/AppToken';

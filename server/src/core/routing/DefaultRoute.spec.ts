@@ -5,7 +5,7 @@ import * as sinon from 'sinon';
 import 'mocha';  
 import { SinonStub } from 'sinon';
 import { mongoose } from '../models/db/mongo/connection';
-import { AppInvalidRouteError } from '../errors/AppInvalidRouteError';
+import { appInvalidRouteError } from './../../configuration/errors/errorsConfig';
 
 const dfr = new DefaultRoute();
 
@@ -21,6 +21,6 @@ describe('class DefaultRoute', () => {
 
         await dfr.get(<Request>req, <Response>res);
         
-        sinon.assert.calledWith(res.json as SinonStub, (new AppInvalidRouteError()).get())
+        sinon.assert.calledWith(res.json as SinonStub, (appInvalidRouteError.get()))
     })
 });

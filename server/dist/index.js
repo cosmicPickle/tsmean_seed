@@ -134,6 +134,34 @@ exports.default = exports.mongoConfig;
 
 /***/ }),
 
+/***/ "./server/src/configuration/errors/errorsConfig.ts":
+/*!*********************************************************!*\
+  !*** ./server/src/configuration/errors/errorsConfig.ts ***!
+  \*********************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const AppGeneralError_1 = __webpack_require__(/*! ./../../core/errors/AppGeneralError */ "./server/src/core/errors/AppGeneralError.ts");
+const AppInvalidRouteError_1 = __webpack_require__(/*! ./../../core/errors/AppInvalidRouteError */ "./server/src/core/errors/AppInvalidRouteError.ts");
+const AppAuthorizationError_1 = __webpack_require__(/*! ./../../core/errors/AppAuthorizationError */ "./server/src/core/errors/AppAuthorizationError.ts");
+const AppRouteValidationError_1 = __webpack_require__(/*! ./../../core/errors/AppRouteValidationError */ "./server/src/core/errors/AppRouteValidationError.ts");
+const AppMongoError_1 = __webpack_require__(/*! ./../../core/errors/AppMongoError */ "./server/src/core/errors/AppMongoError.ts");
+const AppUnknownUserError_1 = __webpack_require__(/*! ./../../core/errors/AppUnknownUserError */ "./server/src/core/errors/AppUnknownUserError.ts");
+const AppUnknownGroupError_1 = __webpack_require__(/*! ./../../core/errors/AppUnknownGroupError */ "./server/src/core/errors/AppUnknownGroupError.ts");
+exports.appGeneralError = new AppGeneralError_1.AppGeneralError(1000);
+exports.appInvalidRouteError = new AppInvalidRouteError_1.AppInvalidRouteError(1001);
+exports.appAuthorizationError = new AppAuthorizationError_1.AppAuthorizationError(1002);
+exports.appRouteValidationError = new AppRouteValidationError_1.AppRouteValidationError(1003);
+exports.appMongoError = new AppMongoError_1.AppMongoError(1004);
+exports.appUnknownUserError = new AppUnknownUserError_1.AppUnknownUserError(1005);
+exports.appUnknownGroupError = new AppUnknownGroupError_1.AppUnknownGroupError(1006);
+
+
+/***/ }),
+
 /***/ "./server/src/configuration/middlewares/middlewaresConfig.ts":
 /*!*******************************************************************!*\
   !*** ./server/src/configuration/middlewares/middlewaresConfig.ts ***!
@@ -146,6 +174,7 @@ exports.default = exports.mongoConfig;
 Object.defineProperty(exports, "__esModule", { value: true });
 const bodyParser = __webpack_require__(/*! body-parser */ "body-parser");
 const AppLoggerMiddleware_1 = __webpack_require__(/*! ./../../core/middlewares/AppLoggerMiddleware */ "./server/src/core/middlewares/AppLoggerMiddleware.ts");
+const UserRouteValidatorMiddleware_1 = __webpack_require__(/*! ./../../middlewares/validation/request/UserRouteValidatorMiddleware */ "./server/src/middlewares/validation/request/UserRouteValidatorMiddleware.ts");
 exports.middlewares = {
     _: [
         bodyParser.urlencoded({ extended: true }),
@@ -153,6 +182,7 @@ exports.middlewares = {
     ],
     '/user/:name?': {
         get: [
+            UserRouteValidatorMiddleware_1.userRouteValidatorMiddleware.get,
             AppLoggerMiddleware_1.appLoggerMiddleware.log,
         ]
     }
@@ -185,6 +215,28 @@ exports.default = exports.routesConfig;
 
 /***/ }),
 
+/***/ "./server/src/core/errors/AppAuthorizationError.ts":
+/*!*********************************************************!*\
+  !*** ./server/src/core/errors/AppAuthorizationError.ts ***!
+  \*********************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const AppError_1 = __webpack_require__(/*! ./AppError */ "./server/src/core/errors/AppError.ts");
+class AppAuthorizationError extends AppError_1.AppError {
+    constructor() {
+        super(...arguments);
+        this.message = "not_authorized";
+    }
+}
+exports.AppAuthorizationError = AppAuthorizationError;
+
+
+/***/ }),
+
 /***/ "./server/src/core/errors/AppError.ts":
 /*!********************************************!*\
   !*** ./server/src/core/errors/AppError.ts ***!
@@ -196,6 +248,9 @@ exports.default = exports.routesConfig;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 class AppError {
+    constructor(code) {
+        this.code = code;
+    }
     get() {
         return {
             code: this.code,
@@ -206,6 +261,28 @@ class AppError {
 }
 exports.AppError = AppError;
 exports.default = AppError;
+
+
+/***/ }),
+
+/***/ "./server/src/core/errors/AppGeneralError.ts":
+/*!***************************************************!*\
+  !*** ./server/src/core/errors/AppGeneralError.ts ***!
+  \***************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const AppError_1 = __webpack_require__(/*! ./AppError */ "./server/src/core/errors/AppError.ts");
+class AppGeneralError extends AppError_1.AppError {
+    constructor() {
+        super(...arguments);
+        this.message = "unexpected_error";
+    }
+}
+exports.AppGeneralError = AppGeneralError;
 
 
 /***/ }),
@@ -224,12 +301,10 @@ const AppError_1 = __webpack_require__(/*! ./AppError */ "./server/src/core/erro
 class AppInvalidRouteError extends AppError_1.AppError {
     constructor() {
         super(...arguments);
-        this.code = 1004;
-        this.message = "Invalid Route";
+        this.message = "invalid_route";
     }
 }
 exports.AppInvalidRouteError = AppInvalidRouteError;
-exports.appInvalidRouteError = new AppInvalidRouteError();
 
 
 /***/ }),
@@ -281,7 +356,42 @@ class AppMongoError extends AppError_1.AppError {
     }
 }
 exports.AppMongoError = AppMongoError;
-exports.appMongoError = new AppMongoError();
+
+
+/***/ }),
+
+/***/ "./server/src/core/errors/AppRouteValidationError.ts":
+/*!***********************************************************!*\
+  !*** ./server/src/core/errors/AppRouteValidationError.ts ***!
+  \***********************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const AppError_1 = __webpack_require__(/*! ./AppError */ "./server/src/core/errors/AppError.ts");
+class AppRouteValidationError extends AppError_1.AppError {
+    constructor() {
+        super(...arguments);
+        this.message = "invalid_route_params";
+    }
+    parse(error) {
+        this.payload = {
+            errors: [],
+            invalid: error._object
+        };
+        error.details.forEach((e) => {
+            this.payload.errors.push({
+                path: e.path,
+                type: e.type,
+                context: e.context
+            });
+        });
+        return this;
+    }
+}
+exports.AppRouteValidationError = AppRouteValidationError;
 
 
 /***/ }),
@@ -305,7 +415,6 @@ class AppUnknownGroupError extends AppError_1.AppError {
     }
 }
 exports.AppUnknownGroupError = AppUnknownGroupError;
-exports.appUnknownGroupError = new AppUnknownGroupError;
 
 
 /***/ }),
@@ -324,12 +433,10 @@ const AppError_1 = __webpack_require__(/*! ./AppError */ "./server/src/core/erro
 class AppUnknownUserError extends AppError_1.AppError {
     constructor() {
         super(...arguments);
-        this.code = 1002;
-        this.message = "Unknown user";
+        this.message = "unknown_user";
     }
 }
 exports.AppUnknownUserError = AppUnknownUserError;
-exports.appUnknownUserError = new AppUnknownUserError;
 
 
 /***/ }),
@@ -483,6 +590,69 @@ class AppLoggerMiddleware {
 }
 exports.AppLoggerMiddleware = AppLoggerMiddleware;
 exports.appLoggerMiddleware = new AppLoggerMiddleware();
+
+
+/***/ }),
+
+/***/ "./server/src/core/middlewares/validation/request/AppBaseRequestValidator.ts":
+/*!***********************************************************************************!*\
+  !*** ./server/src/core/middlewares/validation/request/AppBaseRequestValidator.ts ***!
+  \***********************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const Joi = __webpack_require__(/*! joi */ "joi");
+class AppBaseQuerySchema {
+    constructor() {
+        this.__sortSchema = Joi.string();
+        this.__orderSchema = Joi.number().valid(-1, 1);
+        this.__pageSchema = Joi.number().min(0);
+        this.getSchema = () => {
+            let _schema = Joi.object();
+            let keys = {};
+            Object.keys(this.__filtersSchema).forEach((val) => {
+                keys[val] = this.__filtersSchema[val];
+            });
+            keys.sort = this.__sortSchema;
+            keys.order = this.__orderSchema;
+            keys.page = this.__pageSchema;
+            return _schema.keys(keys);
+        };
+    }
+}
+exports.AppBaseQuerySchema = AppBaseQuerySchema;
+exports.appBaseQuerySchema = new AppBaseQuerySchema();
+class AppBaseBodySchema {
+}
+exports.AppBaseBodySchema = AppBaseBodySchema;
+exports.appBaseBodySchema = new AppBaseBodySchema();
+class AppBaseRequestValidator {
+    constructor(querySchema, bodySchema) {
+        this.validateQuery = (query) => {
+            return new Promise((resolve, reject) => {
+                try {
+                    const { error, value } = Joi.validate(query, this.__querySchema);
+                    if (error)
+                        throw error;
+                    resolve(true);
+                }
+                catch (e) {
+                    throw e;
+                }
+            });
+        };
+        this.validate = (req) => {
+            return Promise.all([
+                this.validateQuery(req.query)
+            ]);
+        };
+        this.__querySchema = querySchema.getSchema();
+    }
+}
+exports.AppBaseRequestValidator = AppBaseRequestValidator;
 
 
 /***/ }),
@@ -712,21 +882,21 @@ exports.userUsernameValidator = new UserUsernameValidator();
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const AppInvalidRouteError_1 = __webpack_require__(/*! ./../errors/AppInvalidRouteError */ "./server/src/core/errors/AppInvalidRouteError.ts");
+const errorsConfig_1 = __webpack_require__(/*! ./../../configuration/errors/errorsConfig */ "./server/src/configuration/errors/errorsConfig.ts");
 const middlewaresConfig_1 = __webpack_require__(/*! ./../../configuration/middlewares/middlewaresConfig */ "./server/src/configuration/middlewares/middlewaresConfig.ts");
 class AppRoute {
     constructor() { }
     get(req, res) {
-        res.json(AppInvalidRouteError_1.appInvalidRouteError.get());
+        res.json(errorsConfig_1.appInvalidRouteError.get());
     }
     post(req, res) {
-        res.json(AppInvalidRouteError_1.appInvalidRouteError.get());
+        res.json(errorsConfig_1.appInvalidRouteError.get());
     }
     put(req, res) {
-        res.json(AppInvalidRouteError_1.appInvalidRouteError.get());
+        res.json(errorsConfig_1.appInvalidRouteError.get());
     }
     delete(req, res) {
-        res.json(AppInvalidRouteError_1.appInvalidRouteError.get());
+        res.json(errorsConfig_1.appInvalidRouteError.get());
     }
     mountMiddlewares(router) {
         const routeMiddlewares = middlewaresConfig_1.default[this.path];
@@ -848,6 +1018,59 @@ exports.server = start();
 
 /***/ }),
 
+/***/ "./server/src/middlewares/validation/request/UserRouteValidatorMiddleware.ts":
+/*!***********************************************************************************!*\
+  !*** ./server/src/middlewares/validation/request/UserRouteValidatorMiddleware.ts ***!
+  \***********************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const AppBaseRequestValidator_1 = __webpack_require__(/*! ./../../../core/middlewares/validation/request/AppBaseRequestValidator */ "./server/src/core/middlewares/validation/request/AppBaseRequestValidator.ts");
+const Joi = __webpack_require__(/*! joi */ "joi");
+const errorsConfig_1 = __webpack_require__(/*! ./../../../configuration/errors/errorsConfig */ "./server/src/configuration/errors/errorsConfig.ts");
+class UserRouteGetQuerySchema extends AppBaseRequestValidator_1.AppBaseQuerySchema {
+    constructor() {
+        super(...arguments);
+        this.__sortSchema = Joi.string().valid('age', 'level');
+        this.__filtersSchema = {
+            country: Joi.string().min(3).max(32)
+        };
+    }
+}
+exports.UserRouteGetQuerySchema = UserRouteGetQuerySchema;
+exports.userRouteGetQuerySchema = new UserRouteGetQuerySchema();
+exports.userRouteGetValidtor = new AppBaseRequestValidator_1.AppBaseRequestValidator(exports.userRouteGetQuerySchema, AppBaseRequestValidator_1.appBaseBodySchema);
+class UserRouteValidatorMiddleware {
+    constructor() {
+        this.getValidator = exports.userRouteGetValidtor;
+        this.get = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield this.getValidator.validateQuery(req.query);
+                next();
+            }
+            catch (e) {
+                res.json(errorsConfig_1.appRouteValidationError.parse(e).get());
+            }
+        });
+    }
+}
+exports.UserRouteValidatorMiddleware = UserRouteValidatorMiddleware;
+exports.userRouteValidatorMiddleware = new UserRouteValidatorMiddleware();
+
+
+/***/ }),
+
 /***/ "./server/src/routes/GroupRoute.ts":
 /*!*****************************************!*\
   !*** ./server/src/routes/GroupRoute.ts ***!
@@ -868,7 +1091,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const AppRoute_1 = __webpack_require__(/*! ./../core/routing/AppRoute */ "./server/src/core/routing/AppRoute.ts");
 const GroupDocument_1 = __webpack_require__(/*! ./../core/models/db/mongo/GroupDocument */ "./server/src/core/models/db/mongo/GroupDocument.ts");
-const AppMongoError_1 = __webpack_require__(/*! ./../core/errors/AppMongoError */ "./server/src/core/errors/AppMongoError.ts");
+const errorsConfig_1 = __webpack_require__(/*! ./../configuration/errors/errorsConfig */ "./server/src/configuration/errors/errorsConfig.ts");
 class GroupRoute extends AppRoute_1.default {
     constructor() {
         super(...arguments);
@@ -888,7 +1111,7 @@ class GroupRoute extends AppRoute_1.default {
                 });
             }
             catch (err) {
-                return res.json(AppMongoError_1.appMongoError.parse(err).get());
+                return res.json(errorsConfig_1.appMongoError.parse(err).get());
             }
         });
     }
@@ -919,9 +1142,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const AppRoute_1 = __webpack_require__(/*! ./../core/routing/AppRoute */ "./server/src/core/routing/AppRoute.ts");
 const UserDocument_1 = __webpack_require__(/*! ./../core/models/db/mongo/UserDocument */ "./server/src/core/models/db/mongo/UserDocument.ts");
-const AppMongoError_1 = __webpack_require__(/*! ./../core/errors/AppMongoError */ "./server/src/core/errors/AppMongoError.ts");
-const AppUnknownUserError_1 = __webpack_require__(/*! ./../core/errors/AppUnknownUserError */ "./server/src/core/errors/AppUnknownUserError.ts");
-const AppUnknownGroupError_1 = __webpack_require__(/*! ./../core/errors/AppUnknownGroupError */ "./server/src/core/errors/AppUnknownGroupError.ts");
+const errorsConfig_1 = __webpack_require__(/*! ./../configuration/errors/errorsConfig */ "./server/src/configuration/errors/errorsConfig.ts");
+const errorsConfig_2 = __webpack_require__(/*! ./../configuration/errors/errorsConfig */ "./server/src/configuration/errors/errorsConfig.ts");
+const errorsConfig_3 = __webpack_require__(/*! ./../configuration/errors/errorsConfig */ "./server/src/configuration/errors/errorsConfig.ts");
 const GroupDocument_1 = __webpack_require__(/*! ../core/models/db/mongo/GroupDocument */ "./server/src/core/models/db/mongo/GroupDocument.ts");
 class UserRoute extends AppRoute_1.default {
     constructor() {
@@ -935,7 +1158,7 @@ class UserRoute extends AppRoute_1.default {
                     username: req.params.name || ''
                 }).populate('group').exec();
                 if (!user)
-                    return res.json(AppUnknownUserError_1.appUnknownUserError.get());
+                    return res.json(errorsConfig_2.appUnknownUserError.get());
                 else {
                     return res.json({
                         handshake: 'Hi, ' + user.username,
@@ -945,7 +1168,7 @@ class UserRoute extends AppRoute_1.default {
                 }
             }
             catch (err) {
-                return res.json(AppMongoError_1.appMongoError.parse(err).get());
+                return res.json(errorsConfig_1.appMongoError.parse(err).get());
             }
         });
     }
@@ -956,7 +1179,7 @@ class UserRoute extends AppRoute_1.default {
                     name: req.body.group
                 });
                 if (!group)
-                    return res.json(AppUnknownGroupError_1.appUnknownGroupError.get());
+                    return res.json(errorsConfig_3.appUnknownGroupError.get());
                 let user = new UserDocument_1.User();
                 user.username = req.body.username;
                 user.password = req.body.password;
@@ -968,7 +1191,7 @@ class UserRoute extends AppRoute_1.default {
                 });
             }
             catch (err) {
-                return res.json(AppMongoError_1.appMongoError.parse(err).get());
+                return res.json(errorsConfig_1.appMongoError.parse(err).get());
             }
         });
     }
@@ -1021,6 +1244,17 @@ module.exports = require("express");
 /***/ (function(module, exports) {
 
 module.exports = require("http");
+
+/***/ }),
+
+/***/ "joi":
+/*!**********************!*\
+  !*** external "joi" ***!
+  \**********************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = require("joi");
 
 /***/ }),
 

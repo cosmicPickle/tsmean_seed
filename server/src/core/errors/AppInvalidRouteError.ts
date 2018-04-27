@@ -2,8 +2,5 @@ import { AppError } from './AppError';
 
 export class AppInvalidRouteError extends AppError {
     
-    protected code = 1004;
-    protected message = "Invalid Route";
+    protected message = "invalid_route";
 }
-
-export let appInvalidRouteError = new AppInvalidRouteError();
