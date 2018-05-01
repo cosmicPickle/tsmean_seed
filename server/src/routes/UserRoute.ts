@@ -7,10 +7,13 @@ import { appUnknownGroupError } from './../configuration/errors/errorsConfig';
 import { Group } from '../core/models/db/mongo/GroupDocument';
 import { mongoose } from '../core/models/db/mongo/connection';
 import { logger } from '../core/lib/AppLogger';
-export class UserRoute extends AppRoute {
+import { UserRouteRequest } from '../models/routing/request/UserRouteRequest';
+
+export class UserRoute extends AppRoute<UserRouteRequest> {
     protected path = '/user/:name?'
 
-    async get(req: Request, res: Response) {
+    async get(req: UserRouteRequest, res: Response) {
+        
         try {
             const user = await User.findOne({
                 username: req.params.name || ''

@@ -2,33 +2,34 @@ import { appInvalidRouteError } from './../../configuration/errors/errorsConfig'
 import { Request, Response, Router } from 'express';
 import { AppMiddlewareMethod} from './../middlewares/AppMiddleware'
 import middlewaresConfig from './../../configuration/middlewares/middlewaresConfig';
-interface AppRouteInterface {
-    get: (req: Request, res: Response) => void
-    post: (req: Request, res: Response) => void
-    put: (req: Request, res: Response) => void
-    delete: (req: Request, res: Response) => void
+import { AppBaseRequest } from '../models/routing/request/AppBaseRequest';
+interface AppRouteInterface<T extends AppBaseRequest<any, any>> {
+    get: (req: T, res: Response) => void
+    post: (req: T, res: Response) => void
+    put: (req: T, res: Response) => void
+    delete: (req: T, res: Response) => void
     mount: (router: Router) => void
 }
 
-export class AppRoute implements AppRouteInterface {
+export class AppRoute<T extends AppBaseRequest<any, any>> implements AppRouteInterface<T> {
     protected path: string;
     protected middlewares: AppMiddlewareMethod;
 
     constructor() { }
 
-    get(req: Request, res: Response) {
+    get(req: T, res: Response) {
         res.json(appInvalidRouteError.get());
     }
 
-    post(req: Request, res: Response) {
+    post(req: T, res: Response) {
         res.json(appInvalidRouteError.get());
     }
 
-    put(req: Request, res: Response) {
+    put(req: T, res: Response) {
         res.json(appInvalidRouteError.get());
     }
 
-    delete(req: Request, res: Response) {
+    delete(req: T, res: Response) {
         res.json(appInvalidRouteError.get());
     }
 

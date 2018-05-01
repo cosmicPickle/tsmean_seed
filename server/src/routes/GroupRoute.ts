@@ -5,15 +5,18 @@ import { appMongoError } from './../configuration/errors/errorsConfig'
 import { appUnknownUserError } from './../configuration/errors/errorsConfig'
 import { AppServicePath } from '../core/models/AppServicePath';
 import { logger } from '../core/lib/AppLogger';
-export class GroupRoute extends AppRoute {
+import { GroupRouteRequest } from '../models/routing/request/GroupRouteRequest';
+
+export class GroupRoute extends AppRoute<GroupRouteRequest> {
     protected path = '/group/:id?'
 
-    async post(req: Request, res: Response) {
+    async post(req: GroupRouteRequest, res: Response) {
         try {
+            req.body
             let group = new Group();
             group.name = req.body.name;
             group.allowedRoutes = req.body.allowedRoutes;
-            group.allowedServices = req.body.allowedServices as AppServicePath[];
+            group.allowedServices = req.body.allowedServices;
             
             await group.save();
             

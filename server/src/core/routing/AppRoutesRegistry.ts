@@ -3,7 +3,7 @@ import routesConfig from './../../configuration/routes/routesConfig';
 
 export class AppRoutesRegistry {
 
-    private routes: AppRoute[] = routesConfig;
+    private routes: AppRoute<any>[] = routesConfig;
 
     constructor(public router: any) {
         this.routes.forEach((route) => {

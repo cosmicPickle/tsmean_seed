@@ -1,13 +1,13 @@
 import { AppMiddlewareFunction } from './../../../core/middlewares/AppMiddleware';
 import { Request, Response, NextFunction } from 'express';
 import { appRouteValidationError } from './../../../configuration/errors/errorsConfig';
-import { UserRouteGetValidator, userRouteGetValidator } from './../../../models/routing/request/UserRouteRequestValidator';
+import { groupRouteGetValidator, groupRoutePostValidator, GroupRouteGetValidator } from './../../../models/routing/request/GroupRouteRequestValidator';
 import * as Joi from 'joi';
 
-export class UserRouteValidatorMiddleware {
-    private getValidator: UserRouteGetValidator = userRouteGetValidator;
+export class GroupRouteValidatorMiddleware {
+    private getValidator: GroupRouteGetValidator = groupRouteGetValidator;
     get: AppMiddlewareFunction = async (req: Request, res: Response, next: NextFunction) => { 
-        try {
+       try {
             await this.getValidator.validateQuery(req.query);
             next();
         } catch(e) {
@@ -16,4 +16,4 @@ export class UserRouteValidatorMiddleware {
     }
 }
 
-export let userRouteValidatorMiddleware = new UserRouteValidatorMiddleware();
+export let groupRouteValidatorMiddleware = new GroupRouteValidatorMiddleware();

@@ -175,15 +175,21 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const bodyParser = __webpack_require__(/*! body-parser */ "body-parser");
 const AppLoggerMiddleware_1 = __webpack_require__(/*! ./../../core/middlewares/AppLoggerMiddleware */ "./server/src/core/middlewares/AppLoggerMiddleware.ts");
 const UserRouteValidatorMiddleware_1 = __webpack_require__(/*! ./../../middlewares/validation/request/UserRouteValidatorMiddleware */ "./server/src/middlewares/validation/request/UserRouteValidatorMiddleware.ts");
+const GroupRouteValidatorMiddleware_1 = __webpack_require__(/*! ../../middlewares/validation/request/GroupRouteValidatorMiddleware */ "./server/src/middlewares/validation/request/GroupRouteValidatorMiddleware.ts");
 exports.middlewares = {
     _: [
         bodyParser.urlencoded({ extended: true }),
-        bodyParser.json({ strict: false })
+        bodyParser.json({ strict: false }),
+        AppLoggerMiddleware_1.appLoggerMiddleware.log
     ],
     '/user/:name?': {
         get: [
             UserRouteValidatorMiddleware_1.userRouteValidatorMiddleware.get,
-            AppLoggerMiddleware_1.appLoggerMiddleware.log,
+        ]
+    },
+    '/group/:name?': {
+        get: [
+            GroupRouteValidatorMiddleware_1.groupRouteValidatorMiddleware.get
         ]
     }
 };
@@ -594,69 +600,6 @@ exports.appLoggerMiddleware = new AppLoggerMiddleware();
 
 /***/ }),
 
-/***/ "./server/src/core/middlewares/validation/request/AppBaseRequestValidator.ts":
-/*!***********************************************************************************!*\
-  !*** ./server/src/core/middlewares/validation/request/AppBaseRequestValidator.ts ***!
-  \***********************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const Joi = __webpack_require__(/*! joi */ "joi");
-class AppBaseQuerySchema {
-    constructor() {
-        this.__sortSchema = Joi.string();
-        this.__orderSchema = Joi.number().valid(-1, 1);
-        this.__pageSchema = Joi.number().min(0);
-        this.getSchema = () => {
-            let _schema = Joi.object();
-            let keys = {};
-            Object.keys(this.__filtersSchema).forEach((val) => {
-                keys[val] = this.__filtersSchema[val];
-            });
-            keys.sort = this.__sortSchema;
-            keys.order = this.__orderSchema;
-            keys.page = this.__pageSchema;
-            return _schema.keys(keys);
-        };
-    }
-}
-exports.AppBaseQuerySchema = AppBaseQuerySchema;
-exports.appBaseQuerySchema = new AppBaseQuerySchema();
-class AppBaseBodySchema {
-}
-exports.AppBaseBodySchema = AppBaseBodySchema;
-exports.appBaseBodySchema = new AppBaseBodySchema();
-class AppBaseRequestValidator {
-    constructor(querySchema, bodySchema) {
-        this.validateQuery = (query) => {
-            return new Promise((resolve, reject) => {
-                try {
-                    const { error, value } = Joi.validate(query, this.__querySchema);
-                    if (error)
-                        throw error;
-                    resolve(true);
-                }
-                catch (e) {
-                    throw e;
-                }
-            });
-        };
-        this.validate = (req) => {
-            return Promise.all([
-                this.validateQuery(req.query)
-            ]);
-        };
-        this.__querySchema = querySchema.getSchema();
-    }
-}
-exports.AppBaseRequestValidator = AppBaseRequestValidator;
-
-
-/***/ }),
-
 /***/ "./server/src/core/models/db/mongo/BaseDocument.ts":
 /*!*********************************************************!*\
   !*** ./server/src/core/models/db/mongo/BaseDocument.ts ***!
@@ -872,6 +815,124 @@ exports.userUsernameValidator = new UserUsernameValidator();
 
 /***/ }),
 
+/***/ "./server/src/core/models/routing/request/AppBaseRequestValidator.ts":
+/*!***************************************************************************!*\
+  !*** ./server/src/core/models/routing/request/AppBaseRequestValidator.ts ***!
+  \***************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const Joi = __webpack_require__(/*! joi */ "joi");
+class AppBaseQuerySchema {
+    constructor() {
+        this.__sortSchema = Joi.string();
+        this.__orderSchema = Joi.number().valid(-1, 1);
+        this.__pageSchema = Joi.number().min(0);
+        this.getSchema = () => {
+            let _schema = Joi.object();
+            let keys = {};
+            if (this.__filtersSchema) {
+                Object.keys(this.__filtersSchema).forEach((val) => {
+                    keys[val] = this.__filtersSchema[val];
+                });
+            }
+            keys.sort = this.__sortSchema;
+            keys.order = this.__orderSchema;
+            keys.page = this.__pageSchema;
+            return _schema.keys(keys);
+        };
+    }
+    set sort(val) {
+        this.__sortSchema = val;
+    }
+    set order(val) {
+        this.__orderSchema = val;
+    }
+    set page(val) {
+        this.__pageSchema = val;
+    }
+    set filters(val) {
+        this.__filtersSchema = val;
+    }
+}
+exports.AppBaseQuerySchema = AppBaseQuerySchema;
+class AppBaseBodySchema {
+    constructor() {
+        this.__uuidSchema = Joi.string();
+        this.getSchema = () => {
+            let _schema = Joi.object();
+            let keys = {};
+            if (this.__dataSchema) {
+                Object.keys(this.__dataSchema).forEach((val) => {
+                    keys[val] = this.__dataSchema[val];
+                });
+            }
+            keys.uuid = this.__uuidSchema;
+            return _schema.keys(keys);
+        };
+    }
+    set uuid(val) {
+        this.__uuidSchema = val;
+    }
+    set data(val) {
+        this.__dataSchema = val;
+    }
+}
+exports.AppBaseBodySchema = AppBaseBodySchema;
+class AppBaseRequestValidator {
+    constructor(querySchema, bodySchema) {
+        this.validateQuery = (query) => {
+            return new Promise((resolve, reject) => {
+                if (!this.__querySchema) {
+                    resolve(true);
+                    return;
+                }
+                try {
+                    const { error, value } = Joi.validate(query, this.__querySchema);
+                    if (error)
+                        throw error;
+                    resolve(true);
+                }
+                catch (e) {
+                    throw e;
+                }
+            });
+        };
+        this.validateBody = (body) => {
+            return new Promise((resolve, reject) => {
+                if (!this.__bodySchema) {
+                    resolve(true);
+                    return;
+                }
+                try {
+                    const { error, value } = Joi.validate(body, this.__bodySchema);
+                    if (error)
+                        throw error;
+                    resolve(true);
+                }
+                catch (e) {
+                    throw e;
+                }
+            });
+        };
+        this.validate = (req) => {
+            return Promise.all([
+                this.validateQuery(req.query),
+                this.validateBody(req.body)
+            ]);
+        };
+        this.__querySchema = querySchema.getSchema();
+        this.__bodySchema = bodySchema.getSchema();
+    }
+}
+exports.AppBaseRequestValidator = AppBaseRequestValidator;
+
+
+/***/ }),
+
 /***/ "./server/src/core/routing/AppRoute.ts":
 /*!*********************************************!*\
   !*** ./server/src/core/routing/AppRoute.ts ***!
@@ -1018,6 +1079,46 @@ exports.server = start();
 
 /***/ }),
 
+/***/ "./server/src/middlewares/validation/request/GroupRouteValidatorMiddleware.ts":
+/*!************************************************************************************!*\
+  !*** ./server/src/middlewares/validation/request/GroupRouteValidatorMiddleware.ts ***!
+  \************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const errorsConfig_1 = __webpack_require__(/*! ./../../../configuration/errors/errorsConfig */ "./server/src/configuration/errors/errorsConfig.ts");
+const GroupRouteRequestValidator_1 = __webpack_require__(/*! ./../../../models/routing/request/GroupRouteRequestValidator */ "./server/src/models/routing/request/GroupRouteRequestValidator.ts");
+class GroupRouteValidatorMiddleware {
+    constructor() {
+        this.getValidator = GroupRouteRequestValidator_1.groupRouteGetValidator;
+        this.get = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield this.getValidator.validateQuery(req.query);
+                next();
+            }
+            catch (e) {
+                res.json(errorsConfig_1.appRouteValidationError.parse(e).get());
+            }
+        });
+    }
+}
+exports.GroupRouteValidatorMiddleware = GroupRouteValidatorMiddleware;
+exports.groupRouteValidatorMiddleware = new GroupRouteValidatorMiddleware();
+
+
+/***/ }),
+
 /***/ "./server/src/middlewares/validation/request/UserRouteValidatorMiddleware.ts":
 /*!***********************************************************************************!*\
   !*** ./server/src/middlewares/validation/request/UserRouteValidatorMiddleware.ts ***!
@@ -1036,24 +1137,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const AppBaseRequestValidator_1 = __webpack_require__(/*! ./../../../core/middlewares/validation/request/AppBaseRequestValidator */ "./server/src/core/middlewares/validation/request/AppBaseRequestValidator.ts");
-const Joi = __webpack_require__(/*! joi */ "joi");
 const errorsConfig_1 = __webpack_require__(/*! ./../../../configuration/errors/errorsConfig */ "./server/src/configuration/errors/errorsConfig.ts");
-class UserRouteGetQuerySchema extends AppBaseRequestValidator_1.AppBaseQuerySchema {
-    constructor() {
-        super(...arguments);
-        this.__sortSchema = Joi.string().valid('age', 'level');
-        this.__filtersSchema = {
-            country: Joi.string().min(3).max(32)
-        };
-    }
-}
-exports.UserRouteGetQuerySchema = UserRouteGetQuerySchema;
-exports.userRouteGetQuerySchema = new UserRouteGetQuerySchema();
-exports.userRouteGetValidtor = new AppBaseRequestValidator_1.AppBaseRequestValidator(exports.userRouteGetQuerySchema, AppBaseRequestValidator_1.appBaseBodySchema);
+const UserRouteRequestValidator_1 = __webpack_require__(/*! ./../../../models/routing/request/UserRouteRequestValidator */ "./server/src/models/routing/request/UserRouteRequestValidator.ts");
 class UserRouteValidatorMiddleware {
     constructor() {
-        this.getValidator = exports.userRouteGetValidtor;
+        this.getValidator = UserRouteRequestValidator_1.userRouteGetValidator;
         this.get = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             try {
                 yield this.getValidator.validateQuery(req.query);
@@ -1067,6 +1155,56 @@ class UserRouteValidatorMiddleware {
 }
 exports.UserRouteValidatorMiddleware = UserRouteValidatorMiddleware;
 exports.userRouteValidatorMiddleware = new UserRouteValidatorMiddleware();
+
+
+/***/ }),
+
+/***/ "./server/src/models/routing/request/GroupRouteRequestValidator.ts":
+/*!*************************************************************************!*\
+  !*** ./server/src/models/routing/request/GroupRouteRequestValidator.ts ***!
+  \*************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const AppBaseRequestValidator_1 = __webpack_require__(/*! ./../../../core/models/routing/request/AppBaseRequestValidator */ "./server/src/core/models/routing/request/AppBaseRequestValidator.ts");
+class GroupRouteGetQuerySchema extends AppBaseRequestValidator_1.AppBaseQuerySchema {
+}
+exports.GroupRouteGetQuerySchema = GroupRouteGetQuerySchema;
+class GroupRoutePostBodySchema extends AppBaseRequestValidator_1.AppBaseBodySchema {
+}
+exports.GroupRoutePostBodySchema = GroupRoutePostBodySchema;
+exports.groupRouteGetValidator = new AppBaseRequestValidator_1.AppBaseRequestValidator(new GroupRouteGetQuerySchema(), new AppBaseRequestValidator_1.AppBaseBodySchema());
+exports.groupRoutePostValidator = new AppBaseRequestValidator_1.AppBaseRequestValidator(new AppBaseRequestValidator_1.AppBaseQuerySchema(), new GroupRoutePostBodySchema());
+
+
+/***/ }),
+
+/***/ "./server/src/models/routing/request/UserRouteRequestValidator.ts":
+/*!************************************************************************!*\
+  !*** ./server/src/models/routing/request/UserRouteRequestValidator.ts ***!
+  \************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const AppBaseRequestValidator_1 = __webpack_require__(/*! ./../../../core/models/routing/request/AppBaseRequestValidator */ "./server/src/core/models/routing/request/AppBaseRequestValidator.ts");
+const Joi = __webpack_require__(/*! joi */ "joi");
+class UserRouteGetQuerySchema extends AppBaseRequestValidator_1.AppBaseQuerySchema {
+    constructor() {
+        super(...arguments);
+        this.sort = Joi.string().valid('age', 'level');
+        this.filters = {
+            country: Joi.string().min(3).max(32)
+        };
+    }
+}
+exports.UserRouteGetQuerySchema = UserRouteGetQuerySchema;
+exports.userRouteGetValidator = new AppBaseRequestValidator_1.AppBaseRequestValidator(new UserRouteGetQuerySchema(), new AppBaseRequestValidator_1.AppBaseBodySchema());
 
 
 /***/ }),
@@ -1100,6 +1238,7 @@ class GroupRoute extends AppRoute_1.default {
     post(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
+                req.body;
                 let group = new GroupDocument_1.Group();
                 group.name = req.body.name;
                 group.allowedRoutes = req.body.allowedRoutes;
