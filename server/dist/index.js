@@ -621,12 +621,20 @@ class BaseDocument {
     __waitIndexesCreated() {
         return this.__indexesCreated.promise;
     }
+    __sortAndPagination(query, req) {
+        //This is NOT a query. This is a Model
+        return query;
+    }
     model() {
+        const _this = this;
         this.__schema = new mongoose_1.Schema(this.schema);
         this.__schema.methods = this.methods || {};
         this.__schema.statics = this.statics || {};
         this.__schema.static('waitIndexesCreated', () => {
             return this.__waitIndexesCreated();
+        });
+        this.__schema.static('getConfig', () => {
+            return this.config;
         });
         AppLogger_1.logger.debug(`creating model ${this.name}`);
         let model = connection_1.mongoose.model(this.name, this.__schema);
@@ -1293,6 +1301,7 @@ class UserRoute extends AppRoute_1.default {
     get(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
+                res.json(yield UserDocument_1.User.sortAndPagination(req).exec());
                 const user = yield UserDocument_1.User.findOne({
                     username: req.params.name || ''
                 }).populate('group').exec();
