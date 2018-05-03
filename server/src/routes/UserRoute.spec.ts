@@ -22,7 +22,6 @@ describe('class UserRoute', () => {
         let path = '/user/:name?';
         let middlewares = [
             userRouteValidatorMiddleware.get,
-            appLoggerMiddleware.log
             //appAuthenticateMiddleware.check
         ];
         
