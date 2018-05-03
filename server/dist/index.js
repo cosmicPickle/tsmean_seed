@@ -614,28 +614,48 @@ const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
 const connection_1 = __webpack_require__(/*! ./connection */ "./server/src/core/models/db/mongo/connection.ts");
 const Q_1 = __webpack_require__(/*! ./../../../lib/Q */ "./server/src/core/lib/Q.ts");
 const AppLogger_1 = __webpack_require__(/*! ../../../lib/AppLogger */ "./server/src/core/lib/AppLogger.ts");
+class BaseSchema extends mongoose_1.Schema {
+}
+exports.BaseSchema = BaseSchema;
 class BaseDocument {
     constructor() {
+        this.config = {
+            resultsPerPage: 3
+        };
+        this.__methods = {};
+        this.__statics = {
+            waitIndexesCreated: () => {
+                return this.__indexesCreated.promise;
+            }
+        };
+        this.__query = {
+            sortAndPaginate: (() => {
+                const config = this.config;
+                return function (req) {
+                    const q = this;
+                    if (req.query.sort && req.query.order) {
+                        const sort = {};
+                        sort[req.query.sort] = req.query.order;
+                        q.sort(sort);
+                    }
+                    if (config.resultsPerPage > 0) {
+                        const p = req.query.page >= 1 ? req.query.page : 1;
+                        const skip = (p - 1) * config.resultsPerPage;
+                        q.skip(skip);
+                        q.limit(config.resultsPerPage);
+                    }
+                    return q;
+                };
+            })()
+        };
         this.__indexesCreated = (new Q_1.Q).defer();
-    }
-    __waitIndexesCreated() {
-        return this.__indexesCreated.promise;
-    }
-    __sortAndPagination(query, req) {
-        //This is NOT a query. This is a Model
-        return query;
     }
     model() {
         const _this = this;
-        this.__schema = new mongoose_1.Schema(this.schema);
-        this.__schema.methods = this.methods || {};
-        this.__schema.statics = this.statics || {};
-        this.__schema.static('waitIndexesCreated', () => {
-            return this.__waitIndexesCreated();
-        });
-        this.__schema.static('getConfig', () => {
-            return this.config;
-        });
+        this.__schema = new BaseSchema(this.schema);
+        this.__schema.methods = this.methods ? Object.assign({}, this.methods, this.__methods) : Object.assign({}, this.__methods);
+        this.__schema.statics = this.statics ? Object.assign({}, this.statics, this.__statics) : Object.assign({}, this.__statics);
+        this.__schema.query = this.query ? Object.assign({}, this.query, this.__query) : Object.assign({}, this.__query);
         AppLogger_1.logger.debug(`creating model ${this.name}`);
         let model = connection_1.mongoose.model(this.name, this.__schema);
         model.ensureIndexes((err) => {
@@ -705,9 +725,9 @@ exports.default = exports.Group;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
 const BaseDocument_1 = __webpack_require__(/*! ./BaseDocument */ "./server/src/core/models/db/mongo/BaseDocument.ts");
 const UserUsernameValidator_1 = __webpack_require__(/*! ./validators/UserUsernameValidator */ "./server/src/core/models/db/mongo/validators/UserUsernameValidator.ts");
+const connection_1 = __webpack_require__(/*! ./connection */ "./server/src/core/models/db/mongo/connection.ts");
 class UserDocument extends BaseDocument_1.BaseDocument {
     constructor() {
         super(...arguments);
@@ -723,8 +743,12 @@ class UserDocument extends BaseDocument_1.BaseDocument {
                 type: String,
                 required: true
             },
+            country: {
+                type: String,
+                required: true
+            },
             group: {
-                type: mongoose_1.Schema.Types.ObjectId,
+                type: connection_1.mongoose.Schema.Types.ObjectId,
                 ref: 'Group',
                 required: true,
             },
@@ -739,6 +763,14 @@ class UserDocument extends BaseDocument_1.BaseDocument {
             }
         };
         this.methods = {};
+        this.statics = {};
+        this.query = {
+            filter(country) {
+                return this.find({
+                    country: country
+                });
+            }
+        };
     }
 }
 exports.User = ((new UserDocument()).model());
@@ -814,7 +846,7 @@ class UserUsernameValidator extends BaseValidator_1.default {
         this.message = "error_validation_user_username";
     }
     validator(v) {
-        return (/^([a-zA-z])*$/).test(v);
+        return (/^([a-zA-z0-9])*$/).test(v);
     }
 }
 exports.UserUsernameValidator = UserUsernameValidator;
@@ -1207,7 +1239,7 @@ class UserRouteGetQuerySchema extends AppBaseRequestValidator_1.AppBaseQuerySche
         super(...arguments);
         this.sort = Joi.string().valid('age', 'level');
         this.filters = {
-            country: Joi.string().min(3).max(32)
+            country: Joi.string().min(2).max(2)
         };
     }
 }
@@ -1300,23 +1332,38 @@ class UserRoute extends AppRoute_1.default {
     }
     get(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            try {
-                res.json(yield UserDocument_1.User.sortAndPagination(req).exec());
-                const user = yield UserDocument_1.User.findOne({
-                    username: req.params.name || ''
-                }).populate('group').exec();
-                if (!user)
-                    return res.json(errorsConfig_2.appUnknownUserError.get());
-                else {
+            if (req.params.name) {
+                try {
+                    const user = yield UserDocument_1.User.findOne({
+                        username: req.params.name
+                    }).populate('group').exec();
+                    if (!user)
+                        return res.json(errorsConfig_2.appUnknownUserError.get());
                     return res.json({
-                        handshake: 'Hi, ' + user.username,
-                        group: user.group.name,
-                        status: 'ok'
+                        user: user.username,
+                        group: user.group.name
                     });
                 }
+                catch (err) {
+                    return res.json(errorsConfig_1.appMongoError.parse(err).get());
+                }
             }
-            catch (err) {
-                return res.json(errorsConfig_1.appMongoError.parse(err).get());
+            else {
+                let query = UserDocument_1.User.find();
+                if (req.query.country)
+                    query.filter(req.query.country);
+                const userCollection = yield query.sortAndPaginate(req)
+                    .populate('group')
+                    .exec();
+                if (!userCollection)
+                    return res.json(errorsConfig_2.appUnknownUserError.get());
+                return res.json(userCollection.map((user) => {
+                    return {
+                        user: user.username,
+                        group: user.group.name,
+                        country: user.country
+                    };
+                }));
             }
         });
     }
@@ -1331,6 +1378,7 @@ class UserRoute extends AppRoute_1.default {
                 let user = new UserDocument_1.User();
                 user.username = req.body.username;
                 user.password = req.body.password;
+                user.country = req.body.country;
                 user.group = group._id;
                 yield user.save();
                 return res.json({

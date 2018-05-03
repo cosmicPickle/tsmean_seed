@@ -6,7 +6,7 @@ import * as Joi from 'joi';
 export class UserRouteGetQuerySchema extends AppBaseQuerySchema {
     sort = Joi.string().valid('age', 'level');
     filters = {
-        country: Joi.string().min(3).max(32)
+        country: Joi.string().min(2).max(2)
     }
 }
 

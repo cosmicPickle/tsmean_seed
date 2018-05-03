@@ -1,3 +1,4 @@
+import { AppBaseQuery } from './AppBaseRequest';
 import { Request } from 'express';
 
 export interface AppBaseQuery {
@@ -12,7 +13,7 @@ export interface AppBaseBody {
     uuid: string;
 }
 
-export interface AppBaseRequest<T extends AppBaseQuery, Q extends AppBaseBody> extends Request {
+export interface AppBaseRequest<T extends AppBaseQuery = AppBaseQuery, Q extends AppBaseBody = AppBaseBody> extends Request {
     query: T;
     body: Q;
 }
