@@ -15,6 +15,7 @@ export class UserRoute extends AppRoute<UserRouteRequest> {
     async get(req: UserRouteRequest, res: Response) {
         
         try {
+            res.json(await User.sortAndPagination(req).exec());
             const user = await User.findOne({
                 username: req.params.name || ''
             }).populate('group').exec();
