@@ -2,7 +2,7 @@ import { Response, Request, Express } from 'express';
 import * as sinon from 'sinon';
 import 'mocha';  
 import { SinonStub } from 'sinon';
-import { mongoose } from './core/models/db/mongo/connection';
+import { mongoose } from './configuration/db/mongo';
 import { App } from './App';
 import { middlewares } from './configuration/middlewares/middlewaresConfig'
 import { routesConfig } from './configuration/routes/routesConfig';

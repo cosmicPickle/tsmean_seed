@@ -1,19 +1,13 @@
 import * as sinon from 'sinon';
 import 'mocha';  
 import { SinonStub } from 'sinon';
-import { mongoose } from './connection';
+import { mongoose } from './../../../../configuration/db/mongo';
 import { User } from './UserDocument';
 import { expect } from 'chai';
-import { Group, IGroup } from './GroupDocument';
+import { Group } from './../group/GroupDocument';
 
 describe('model UserDocument', () => {
 
-    // it('should have a hasPermissions function', (done) => {
-    //     let user = new User();
-    //     expect(user).to.have.property('hasPermission');
-    //     done();
-    // })
-    
     it('should be invalid if username is empty', () => {
         let user = new User();
         user.validate((err) => {

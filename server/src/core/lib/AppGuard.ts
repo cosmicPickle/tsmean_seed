@@ -1,7 +1,7 @@
 import * as pathToRegexp from 'path-to-regexp'
 import { Request } from 'express';
-import { User } from './../models/db/mongo/UserDocument'
-import { mongoose } from '../models/db/mongo/connection';
+import { User } from './../models/resource/user/UserDocument'
+import { mongoose } from './../../configuration/db/mongo';
 import { AppServicePath } from '../models/AppServicePath';
 import { logger } from './AppLogger';
 export class AppGuard {

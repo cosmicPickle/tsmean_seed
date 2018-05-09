@@ -3,7 +3,6 @@ import * as sinon from 'sinon';
 import { SinonStub } from 'sinon';
 import * as chai from 'chai';
 
-import { mongoose } from './../models/db/mongo/connection';
 import { appAuthenticateMiddleware } from './AppAuthenticateMiddleware';
 import { appAuthorizationError } from './../../configuration/errors/errorsConfig';
 import * as jwt from 'jsonwebtoken';

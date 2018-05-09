@@ -5,7 +5,8 @@ import { AppServicePath } from '../models/AppServicePath';
 import { Request } from 'express';
 import * as sinon from 'sinon';
 import { Model } from 'mongoose';
-import { IUser, User } from '../models/db/mongo/UserDocument';
+import { IUser } from './../models/resource/user/types';
+import { User } from './../models/resource/user/UserDocument';
 import { SinonStub } from 'sinon';
 
 describe('Library: AppGuard', () => {

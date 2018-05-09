@@ -1,14 +1,8 @@
 import { Document, Model } from "mongoose";
-import { BaseDocument, IBaseModel, IBaseDocumentQuery } from "./BaseDocument";
-import { AppServicePath } from "./../../AppServicePath";
-
-export interface IGroup extends Document {
-    name: string;
-    allowedRoutes: string[],
-    allowedServices: AppServicePath[]
-}
-
-class GroupDocument extends BaseDocument<IGroup, IBaseModel<IGroup>, IBaseDocumentQuery<any>> {
+import { BaseDocument } from './../base/BaseDocument'
+import * as types from './types';
+import * as base from '../base/types';
+class GroupDocument extends BaseDocument<types.IGroup> {
     name = 'Group';
     schema = {
         name: {

@@ -1,5 +1,5 @@
 import { before } from "mocha";
-import { mongoose } from "./core/models/db/mongo/connection";
+import { mongoose } from './configuration/db/mongo';
 import { appMongooseModelManager } from './core/lib/AppMongooseModelManager';
 import { logger } from "./core/lib/AppLogger";
 before(async () => {

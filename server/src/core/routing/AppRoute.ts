@@ -2,8 +2,8 @@ import { appInvalidRouteError } from './../../configuration/errors/errorsConfig'
 import { Request, Response, Router } from 'express';
 import { AppMiddlewareMethod} from './../middlewares/AppMiddleware'
 import middlewaresConfig from './../../configuration/middlewares/middlewaresConfig';
-import { AppBaseRequest } from '../models/routing/request/AppBaseRequest';
-interface AppRouteInterface<T extends AppBaseRequest<any, any>> {
+import { io } from '../models/resource/base/types';
+interface AppRouteInterface<T extends io.AppBaseRequest<any, any>> {
     get: (req: T, res: Response) => void
     post: (req: T, res: Response) => void
     put: (req: T, res: Response) => void
@@ -11,7 +11,7 @@ interface AppRouteInterface<T extends AppBaseRequest<any, any>> {
     mount: (router: Router) => void
 }
 
-export class AppRoute<T extends AppBaseRequest<any, any>> implements AppRouteInterface<T> {
+export class AppRoute<T extends io.AppBaseRequest = io.AppBaseRequest> implements AppRouteInterface<T> {
     protected path: string;
     protected middlewares: AppMiddlewareMethod;
 

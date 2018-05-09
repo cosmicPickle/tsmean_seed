@@ -2,8 +2,7 @@ import * as bodyParser from 'body-parser';
 import { AppMiddlewares } from './../../core/middlewares/AppMiddleware';
 import { appLoggerMiddleware } from './../../core/middlewares/AppLoggerMiddleware';
 import { appAuthenticateMiddleware } from './../../core/middlewares/AppAuthenticateMiddleware';
-import { userRouteValidatorMiddleware } from './../../middlewares/validation/request/UserRouteValidatorMiddleware';
-import { groupRouteValidatorMiddleware } from '../../middlewares/validation/request/GroupRouteValidatorMiddleware';
+import { userRouteValidatorMiddleware } from './../../core/middlewares/validation/request/UserRouteValidatorMiddleware';
 
 export const middlewares: AppMiddlewares= {
     _: [
@@ -15,11 +14,9 @@ export const middlewares: AppMiddlewares= {
         get: [
             userRouteValidatorMiddleware.get,
             //appAuthenticateMiddleware.check
-        ]
-    },
-    '/group/:name?': {
-        get: [
-            groupRouteValidatorMiddleware.get
+        ],
+        post: [
+            userRouteValidatorMiddleware.post
         ]
     }
 };

@@ -1,19 +1,18 @@
-import { IBaseDocumentQuery } from './../core/models/db/mongo/BaseDocument';
-import { Request, Response } from 'express';
-import AppRoute from './../core/routing/AppRoute';
-import { User, IUserDocumentQuery } from './../core/models/db/mongo/UserDocument';
-import { appMongoError } from './../configuration/errors/errorsConfig';
-import { appUnknownUserError } from './../configuration/errors/errorsConfig';
-import { appUnknownGroupError } from './../configuration/errors/errorsConfig';
-import { Group } from '../core/models/db/mongo/GroupDocument';
-import { mongoose } from '../core/models/db/mongo/connection';
-import { logger } from '../core/lib/AppLogger';
-import { UserRouteRequest } from '../models/routing/request/UserRouteRequest';
+import { Response, Request } from "express";
 
-export class UserRoute extends AppRoute<UserRouteRequest> {
+import { AppRoute } from "../core/routing/AppRoute";
+import { appUnknownUserError, appMongoError, appUnknownGroupError } from "../configuration/errors/errorsConfig";
+
+import { UserGetRequest, IUserDocumentQuery } from "../core/models/resource/user/types";
+import { User } from "../core/models/resource/user/UserDocument";
+import { Group } from "../core/models/resource/group/GroupDocument";
+
+
+
+export class UserRoute extends AppRoute<UserGetRequest> {
     protected path = '/user/:name?'
 
-    async get(req: UserRouteRequest, res: Response) {
+    async get(req: UserGetRequest, res: Response) {
         if(req.params.name) {
             try {
                 const user = await User.findOne({
@@ -31,14 +30,15 @@ export class UserRoute extends AppRoute<UserRouteRequest> {
                 return res.json(appMongoError.parse(err).get());
             }
         } else {
-            let query = User.find() as IUserDocumentQuery;
-
+            let query = User.find();
             if(req.query.country)
-                query.filter(req.query.country);
+                query.where('country', req.query.country);
+            if(req.query.age)
+                query.where('age').gt(req.query.age.gt).lt(req.query.age.lt);
 
-            const userCollection = await query.sortAndPaginate(req)
-                                              .populate('group')
-                                              .exec();
+            let userCollection = await (query as IUserDocumentQuery).sortAndPaginate(req)
+                                                          .populate('group')
+                                                          .exec();
             
             if(!userCollection)
                 return res.json(appUnknownUserError.get());
@@ -47,7 +47,8 @@ export class UserRoute extends AppRoute<UserRouteRequest> {
                 return {
                     user: user.username,
                     group: user.group.name,
-                    country: user.country
+                    country: user.country,
+                    age: user.age
                 }
             }))
         }
@@ -61,18 +62,12 @@ export class UserRoute extends AppRoute<UserRouteRequest> {
 
             if(!group) 
                 return res.json(appUnknownGroupError.get())
+            req.body.group = group;
 
-            let user = new User();
-
-            user.username = req.body.username;      
-            user.password = req.body.password;
-            user.country = req.body.country;
-            user.group = group._id;
-
-            await user.save();
+            await User.create(req.body);
 
             return res.json({
-                handshake: 'Hi, ' + user.username + ' welcome aboard',
+                handshake: 'Hi, ' + req.body.username + ' welcome aboard',
                 status: 'ok'
             })
         } catch(err) {
