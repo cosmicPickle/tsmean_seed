@@ -4,4 +4,4 @@ export class UserMongoModel extends BaseMongoModel<IUserMongoModel> {
     name = 'users';
 }
 
-export let User = new UserMongoModel();
+export let User = new UserMongoModel().get();

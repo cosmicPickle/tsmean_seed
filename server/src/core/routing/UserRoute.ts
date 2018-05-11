@@ -10,9 +10,8 @@ export class UserRoute extends AppRoute {
     protected path = '/user/:name?'
 
     async get(req: UserGetRequest , res: Response) {
-        
         try {
-            const user = await User.get().findOne({ 
+            const user = await User.findOne({ 
                 username: req.params.name
             });
             res.json(user);

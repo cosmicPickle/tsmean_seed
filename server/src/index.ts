@@ -1,4 +1,4 @@
-import app from './App'
+
 import * as http from 'http';
 import { logger } from './core/lib/AppLogger';
 import { mongo } from './core/lib/AppMongoDriver';
@@ -6,10 +6,16 @@ import { mongo } from './core/lib/AppMongoDriver';
 const port = process.env.PORT || 3000
 
 let start = async ()  => {
+  let app;
   try {
-    //Bootstrapping server
-    
+    //Executing async boot operations
     await mongo.connect();
+
+    //Loading App
+    const App = require('./App');
+    app = App.default;
+
+    //Bootstrapping server
     http.createServer(app).listen(port, (err) => {
       if (err) {
         return logger.error(err);

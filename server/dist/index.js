@@ -728,7 +728,7 @@ class UserMongoModel extends BaseMongoModel_1.BaseMongoModel {
     }
 }
 exports.UserMongoModel = UserMongoModel;
-exports.User = new UserMongoModel();
+exports.User = new UserMongoModel().get();
 
 
 /***/ }),
@@ -955,7 +955,7 @@ class UserRoute extends AppRoute_1.AppRoute {
     get(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const user = yield UserMongoModel_1.User.get().findOne({
+                const user = yield UserMongoModel_1.User.findOne({
                     username: req.params.name
                 });
                 res.json(user);
@@ -1049,16 +1049,20 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const App_1 = __webpack_require__(/*! ./App */ "./server/src/App.ts");
 const http = __webpack_require__(/*! http */ "http");
 const AppLogger_1 = __webpack_require__(/*! ./core/lib/AppLogger */ "./server/src/core/lib/AppLogger.ts");
 const AppMongoDriver_1 = __webpack_require__(/*! ./core/lib/AppMongoDriver */ "./server/src/core/lib/AppMongoDriver.ts");
 const port = process.env.PORT || 3000;
 let start = () => __awaiter(this, void 0, void 0, function* () {
+    let app;
     try {
-        //Bootstrapping server
+        //Executing async boot operations
         yield AppMongoDriver_1.mongo.connect();
-        http.createServer(App_1.default).listen(port, (err) => {
+        //Loading App
+        const App = __webpack_require__(/*! ./App */ "./server/src/App.ts");
+        app = App.default;
+        //Bootstrapping server
+        http.createServer(app).listen(port, (err) => {
             if (err) {
                 return AppLogger_1.logger.error(err);
             }
@@ -1068,7 +1072,7 @@ let start = () => __awaiter(this, void 0, void 0, function* () {
     catch (err) {
         AppLogger_1.logger.error(err);
     }
-    return App_1.default;
+    return app;
 });
 exports.server = start();
 
