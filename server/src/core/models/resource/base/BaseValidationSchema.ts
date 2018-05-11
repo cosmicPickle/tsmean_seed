@@ -1,7 +1,27 @@
 
 import * as Joi from 'joi';
 
-export class BaseSchema {
+export namespace SchemaHelpers {
+    
+    export const lt = {
+        lt: Joi.number().integer().min(Joi.ref('gt'))
+    }
+
+    export const gt = {
+        gt: Joi.number().integer()
+    }
+
+    export const range = {
+        gt: Joi.number().integer(),
+        lt: Joi.number().integer().min(Joi.ref('gt'))
+    }
+
+    export const $in = {
+        in: Joi.array()
+    }
+}
+
+export class BaseValidationSchema {
     validate(obj): Promise<Boolean> {
         return new Promise<Boolean>((resolve, reject) => {
             let _schema = Joi.object();
@@ -33,31 +53,11 @@ export class BaseSchema {
     }
 }
 
-export namespace SchemaHelpers {
-    
-    export const lt = {
-        lt: Joi.number().integer().min(Joi.ref('gt'))
-    }
-
-    export const gt = {
-        gt: Joi.number().integer()
-    }
-
-    export const range = {
-        gt: Joi.number().integer(),
-        lt: Joi.number().integer().min(Joi.ref('gt'))
-    }
-
-    export const $in = {
-        in: Joi.array()
-    }
-}
-
-export class AppBaseQuerySchema extends BaseSchema {
+export class AppBaseQuerySchema extends BaseValidationSchema {
     sort: Joi.StringSchema = Joi.string().regex(/^(\-|[a-zA-Z0-9\_])/);
     page: Joi.NumberSchema = Joi.number().min(0);
 }
 
-export class AppBaseBodySchema extends BaseSchema {
+export class AppBaseBodySchema extends BaseValidationSchema {
     
 }

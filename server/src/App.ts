@@ -4,7 +4,6 @@ import middlewaresConfig from './configuration/middlewares/middlewaresConfig';
 
 export class App {
     public express = express();
-    private 
     constructor () {}
 
     init() {

@@ -2,9 +2,6 @@
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
 /******/
-/******/ 	// object to store loaded and loading wasm modules
-/******/ 	var installedWasmModules = {};
-/******/
 /******/ 	// The require function
 /******/ 	function __webpack_require__(moduleId) {
 /******/
@@ -67,9 +64,6 @@
 /******/ 	// __webpack_public_path__
 /******/ 	__webpack_require__.p = "/";
 /******/
-/******/ 	// object with all compiled WebAssembly.Modules
-/******/ 	__webpack_require__.w = {};
-/******/
 /******/
 /******/ 	// Load entry module and return exports
 /******/ 	return __webpack_require__(__webpack_require__.s = 0);
@@ -124,16 +118,14 @@ exports.default = new App().init().express;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const mongoose = __webpack_require__(/*! mongoose */ "mongoose");
-exports.mongoose = mongoose;
 exports.mongoConfig = {
     host: 'ds223019.mlab.com:23019/test_seed',
     user: 'cosmicSeed',
-    password: 'csmsd123'
+    password: 'csmsd123',
+    db: 'test_seed'
 };
 const connect = `mongodb://${exports.mongoConfig.user}:${exports.mongoConfig.password}@${exports.mongoConfig.host}`;
-const options = { autoIndex: false };
-const db = mongoose.connect(connect, options);
+exports.connect = connect;
 
 
 /***/ }),
@@ -506,73 +498,43 @@ exports.logger = new AppLogger().logger();
 
 /***/ }),
 
-/***/ "./server/src/core/lib/AppMongooseModelManager.ts":
-/*!********************************************************!*\
-  !*** ./server/src/core/lib/AppMongooseModelManager.ts ***!
-  \********************************************************/
+/***/ "./server/src/core/lib/AppMongoDriver.ts":
+/*!***********************************************!*\
+  !*** ./server/src/core/lib/AppMongoDriver.ts ***!
+  \***********************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
+const mongodb = __webpack_require__(/*! mongodb */ "mongodb");
 const mongo_1 = __webpack_require__(/*! ./../../configuration/db/mongo */ "./server/src/configuration/db/mongo.ts");
 const AppLogger_1 = __webpack_require__(/*! ./AppLogger */ "./server/src/core/lib/AppLogger.ts");
-class AppMongooseModelManager {
+class AppMongoDriver {
     constructor() {
-        this.__models = [];
-        this.__indexesCreated = [];
+        this._client = null;
     }
-    waitIndexesCreated() {
-        AppLogger_1.logger.info("Waiting for MongoDB Indexes to be created.");
-        const modelNames = mongo_1.mongoose.connection.modelNames();
-        modelNames.forEach((name) => {
-            this.__models.push(mongo_1.mongoose.connection.model(name));
-            let model = this.__models[this.__models.length - 1];
-            this.__indexesCreated.push(model.waitIndexesCreated());
+    connect() {
+        return __awaiter(this, void 0, void 0, function* () {
+            AppLogger_1.logger.info(`Connecting to mongodb`);
+            this._client = yield mongodb.MongoClient.connect(mongo_1.connect);
+            this._db = this._client.db(mongo_1.mongoConfig.db);
         });
-        return Promise.all(this.__indexesCreated).then((value) => {
-            AppLogger_1.logger.info('MongoDB Indexes Created.');
-            return value;
-        }, (err) => {
-            AppLogger_1.logger.error(err);
-            return err;
-        });
+    }
+    db() {
+        return this._db;
     }
 }
-exports.AppMongooseModelManager = AppMongooseModelManager;
-exports.appMongooseModelManager = new AppMongooseModelManager();
-exports.default = exports.appMongooseModelManager;
-
-
-/***/ }),
-
-/***/ "./server/src/core/lib/Q.ts":
-/*!**********************************!*\
-  !*** ./server/src/core/lib/Q.ts ***!
-  \**********************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-class Q {
-    defer() {
-        let resolve;
-        let reject;
-        let promise = new Promise(function () {
-            resolve = arguments[0];
-            reject = arguments[1];
-        });
-        return {
-            resolve: resolve,
-            reject: reject,
-            promise: promise
-        };
-    }
-}
-exports.Q = Q;
+exports.mongo = new AppMongoDriver();
 
 
 /***/ }),
@@ -620,13 +582,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const validation_1 = __webpack_require__(/*! ./../../../models/resource/user/validation */ "./server/src/core/models/resource/user/validation.ts");
+const UserValidationSchema_1 = __webpack_require__(/*! ./../../../models/resource/user/UserValidationSchema */ "./server/src/core/models/resource/user/UserValidationSchema.ts");
 const errorsConfig_1 = __webpack_require__(/*! ./../../../../configuration/errors/errorsConfig */ "./server/src/configuration/errors/errorsConfig.ts");
 class UserRouteValidatorMiddleware {
     constructor() {
         this.get = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             try {
-                yield validation_1.userGetQuerySchema.validate(req.query);
+                yield UserValidationSchema_1.userGetQuerySchema.validate(req.query);
                 next();
             }
             catch (e) {
@@ -635,7 +597,7 @@ class UserRouteValidatorMiddleware {
         });
         this.post = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             try {
-                yield validation_1.userPostBodySchema.validate(req.body);
+                yield UserValidationSchema_1.userPostBodySchema.validate(req.body);
                 next();
             }
             catch (e) {
@@ -651,104 +613,39 @@ exports.userRouteValidatorMiddleware = new UserRouteValidatorMiddleware();
 
 /***/ }),
 
-/***/ "./server/src/core/models/resource/base/BaseDocument.ts":
-/*!**************************************************************!*\
-  !*** ./server/src/core/models/resource/base/BaseDocument.ts ***!
-  \**************************************************************/
+/***/ "./server/src/core/models/resource/base/BaseMongoModel.ts":
+/*!****************************************************************!*\
+  !*** ./server/src/core/models/resource/base/BaseMongoModel.ts ***!
+  \****************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const types = __webpack_require__(/*! ./types */ "./server/src/core/models/resource/base/types.ts");
-const mongo_1 = __webpack_require__(/*! ./../../../../configuration/db/mongo */ "./server/src/configuration/db/mongo.ts");
-const Q_1 = __webpack_require__(/*! ./../../../lib/Q */ "./server/src/core/lib/Q.ts");
-const AppLogger_1 = __webpack_require__(/*! ../../../lib/AppLogger */ "./server/src/core/lib/AppLogger.ts");
-class BaseDocument {
+const AppMongoDriver_1 = __webpack_require__(/*! ./../../../lib/AppMongoDriver */ "./server/src/core/lib/AppMongoDriver.ts");
+class BaseMongoModel {
     constructor() {
-        this.config = {
-            resultsPerPage: 3
-        };
-        this.__methods = {};
-        this.__statics = {
-            waitIndexesCreated: () => {
-                return this.__indexesCreated.promise;
-            }
-        };
-        this.__query = {
-            sortAndPaginate: (() => {
-                const config = this.config;
-                return function (req) {
-                    const q = this;
-                    if (req.query.sort) {
-                        q.sort(req.query.sort);
-                    }
-                    if (config.resultsPerPage > 0) {
-                        const p = req.query.page >= 1 ? req.query.page : 1;
-                        const skip = (p - 1) * config.resultsPerPage;
-                        q.skip(skip);
-                        q.limit(config.resultsPerPage);
-                    }
-                    return q;
-                };
-            })()
-        };
-        this.__indexesCreated = (new Q_1.Q).defer();
     }
-    model() {
-        const _this = this;
-        this.__schema = new types.mongo.BaseSchema(this.schema);
-        this.__schema.methods = this.methods ? Object.assign({}, this.methods, this.__methods) : Object.assign({}, this.__methods);
-        this.__schema.statics = this.statics ? Object.assign({}, this.statics, this.__statics) : Object.assign({}, this.__statics);
-        this.__schema.query = this.query ? Object.assign({}, this.query, this.__query) : Object.assign({}, this.__query);
-        AppLogger_1.logger.debug(`creating model ${this.name}`);
-        let model = mongo_1.mongoose.model(this.name, this.__schema);
-        model.ensureIndexes((err) => {
-            if (err) {
-                this.__indexesCreated.reject(err);
-            }
-            else {
-                this.__indexesCreated.resolve();
-            }
-        });
-        return model;
+    get() {
+        if (this.collection)
+            return this.collection;
+        if (!this.name) {
+            throw new Error(`Can't make collection '${this.constructor.prototype}': 'name' not set`);
+        }
+        this.collection = AppMongoDriver_1.mongo.db().collection(this.name);
+        return this.collection;
     }
 }
-exports.BaseDocument = BaseDocument;
-exports.default = BaseDocument;
+exports.BaseMongoModel = BaseMongoModel;
 
 
 /***/ }),
 
-/***/ "./server/src/core/models/resource/base/types.ts":
-/*!*******************************************************!*\
-  !*** ./server/src/core/models/resource/base/types.ts ***!
-  \*******************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const mongoose_1 = __webpack_require__(/*! mongoose */ "mongoose");
-/**
- * Mongodb Types
- */
-var mongo;
-(function (mongo) {
-    class BaseSchema extends mongoose_1.Schema {
-    }
-    mongo.BaseSchema = BaseSchema;
-})(mongo = exports.mongo || (exports.mongo = {}));
-
-
-/***/ }),
-
-/***/ "./server/src/core/models/resource/base/validation.ts":
-/*!************************************************************!*\
-  !*** ./server/src/core/models/resource/base/validation.ts ***!
-  \************************************************************/
+/***/ "./server/src/core/models/resource/base/BaseValidationSchema.ts":
+/*!**********************************************************************!*\
+  !*** ./server/src/core/models/resource/base/BaseValidationSchema.ts ***!
+  \**********************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -756,7 +653,23 @@ var mongo;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const Joi = __webpack_require__(/*! joi */ "joi");
-class BaseSchema {
+var SchemaHelpers;
+(function (SchemaHelpers) {
+    SchemaHelpers.lt = {
+        lt: Joi.number().integer().min(Joi.ref('gt'))
+    };
+    SchemaHelpers.gt = {
+        gt: Joi.number().integer()
+    };
+    SchemaHelpers.range = {
+        gt: Joi.number().integer(),
+        lt: Joi.number().integer().min(Joi.ref('gt'))
+    };
+    SchemaHelpers.$in = {
+        in: Joi.array()
+    };
+})(SchemaHelpers = exports.SchemaHelpers || (exports.SchemaHelpers = {}));
+class BaseValidationSchema {
     validate(obj) {
         return new Promise((resolve, reject) => {
             let _schema = Joi.object();
@@ -781,24 +694,8 @@ class BaseSchema {
         });
     }
 }
-exports.BaseSchema = BaseSchema;
-var SchemaHelpers;
-(function (SchemaHelpers) {
-    SchemaHelpers.lt = {
-        lt: Joi.number().integer().min(Joi.ref('gt'))
-    };
-    SchemaHelpers.gt = {
-        gt: Joi.number().integer()
-    };
-    SchemaHelpers.range = {
-        gt: Joi.number().integer(),
-        lt: Joi.number().integer().min(Joi.ref('gt'))
-    };
-    SchemaHelpers.$in = {
-        in: Joi.array()
-    };
-})(SchemaHelpers = exports.SchemaHelpers || (exports.SchemaHelpers = {}));
-class AppBaseQuerySchema extends BaseSchema {
+exports.BaseValidationSchema = BaseValidationSchema;
+class AppBaseQuerySchema extends BaseValidationSchema {
     constructor() {
         super(...arguments);
         this.sort = Joi.string().regex(/^(\-|[a-zA-Z0-9\_])/);
@@ -806,16 +703,16 @@ class AppBaseQuerySchema extends BaseSchema {
     }
 }
 exports.AppBaseQuerySchema = AppBaseQuerySchema;
-class AppBaseBodySchema extends BaseSchema {
+class AppBaseBodySchema extends BaseValidationSchema {
 }
 exports.AppBaseBodySchema = AppBaseBodySchema;
 
 
 /***/ }),
 
-/***/ "./server/src/core/models/resource/group/GroupDocument.ts":
+/***/ "./server/src/core/models/resource/user/UserMongoModel.ts":
 /*!****************************************************************!*\
-  !*** ./server/src/core/models/resource/group/GroupDocument.ts ***!
+  !*** ./server/src/core/models/resource/user/UserMongoModel.ts ***!
   \****************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
@@ -823,25 +720,22 @@ exports.AppBaseBodySchema = AppBaseBodySchema;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const BaseDocument_1 = __webpack_require__(/*! ./../base/BaseDocument */ "./server/src/core/models/resource/base/BaseDocument.ts");
-const GroupDocumentSchema_1 = __webpack_require__(/*! ./GroupDocumentSchema */ "./server/src/core/models/resource/group/GroupDocumentSchema.ts");
-class GroupDocument extends BaseDocument_1.BaseDocument {
+const BaseMongoModel_1 = __webpack_require__(/*! ./../base/BaseMongoModel */ "./server/src/core/models/resource/base/BaseMongoModel.ts");
+class UserMongoModel extends BaseMongoModel_1.BaseMongoModel {
     constructor() {
         super(...arguments);
-        this.name = 'Group';
-        this.schema = GroupDocumentSchema_1.GroupDocumentSchema;
-        this.methods = {};
+        this.name = 'users';
     }
 }
-exports.Group = ((new GroupDocument()).model());
-exports.default = exports.Group;
+exports.UserMongoModel = UserMongoModel;
+exports.User = new UserMongoModel();
 
 
 /***/ }),
 
-/***/ "./server/src/core/models/resource/group/GroupDocumentSchema.ts":
+/***/ "./server/src/core/models/resource/user/UserValidationSchema.ts":
 /*!**********************************************************************!*\
-  !*** ./server/src/core/models/resource/group/GroupDocumentSchema.ts ***!
+  !*** ./server/src/core/models/resource/user/UserValidationSchema.ts ***!
   \**********************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
@@ -849,130 +743,18 @@ exports.default = exports.Group;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.GroupDocumentSchema = {
-    name: {
-        type: String,
-        required: true,
-        unique: true
-    },
-    allowedServices: {
-        type: [{
-                method: String,
-                path: String
-            }]
-    },
-    allowedRoutes: {
-        type: [String]
-    }
-};
-
-
-/***/ }),
-
-/***/ "./server/src/core/models/resource/user/UserDocument.ts":
-/*!**************************************************************!*\
-  !*** ./server/src/core/models/resource/user/UserDocument.ts ***!
-  \**************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const BaseDocument_1 = __webpack_require__(/*! ./../base/BaseDocument */ "./server/src/core/models/resource/base/BaseDocument.ts");
-const UserDocumentSchema_1 = __webpack_require__(/*! ./UserDocumentSchema */ "./server/src/core/models/resource/user/UserDocumentSchema.ts");
-class UserDocument extends BaseDocument_1.BaseDocument {
-    constructor() {
-        super(...arguments);
-        this.name = 'User';
-        this.schema = UserDocumentSchema_1.UserDocumentSchema;
-        this.methods = {};
-        this.statics = {};
-        this.query = {
-            filter(country) {
-                return this.find({
-                    country: country
-                });
-            }
-        };
-    }
-}
-exports.User = ((new UserDocument()).model());
-exports.default = exports.User;
-
-
-/***/ }),
-
-/***/ "./server/src/core/models/resource/user/UserDocumentSchema.ts":
-/*!********************************************************************!*\
-  !*** ./server/src/core/models/resource/user/UserDocumentSchema.ts ***!
-  \********************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const mongo_1 = __webpack_require__(/*! ./../../../../configuration/db/mongo */ "./server/src/configuration/db/mongo.ts");
-exports.UserDocumentSchema = {
-    username: {
-        type: String,
-        required: true,
-        unique: true,
-    },
-    password: {
-        type: String,
-        required: true
-    },
-    age: {
-        type: Number,
-        required: true
-    },
-    country: {
-        type: String,
-        required: true
-    },
-    group: {
-        type: mongo_1.mongoose.Schema.Types.ObjectId,
-        ref: 'Group',
-        required: true,
-    },
-    allowedServices: {
-        type: [{
-                method: String,
-                path: String
-            }]
-    },
-    allowedRoutes: {
-        type: [String]
-    }
-};
-
-
-/***/ }),
-
-/***/ "./server/src/core/models/resource/user/validation.ts":
-/*!************************************************************!*\
-  !*** ./server/src/core/models/resource/user/validation.ts ***!
-  \************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const validation_1 = __webpack_require__(/*! ./../base/validation */ "./server/src/core/models/resource/base/validation.ts");
+const BaseValidationSchema_1 = __webpack_require__(/*! ./../base/BaseValidationSchema */ "./server/src/core/models/resource/base/BaseValidationSchema.ts");
 const Joi = __webpack_require__(/*! joi */ "joi");
-class UserGetQuerySchema extends validation_1.AppBaseQuerySchema {
+class UserGetQuerySchema extends BaseValidationSchema_1.AppBaseQuerySchema {
     constructor() {
         super(...arguments);
         this.sort = Joi.string().valid('age', '-age');
         this.country = Joi.string().min(2).max(2);
-        this.age = Joi.object().keys(validation_1.SchemaHelpers.range);
+        this.age = Joi.object().keys(BaseValidationSchema_1.SchemaHelpers.range);
     }
 }
 exports.UserGetQuerySchema = UserGetQuerySchema;
-class UserPostBodySchema extends validation_1.AppBaseBodySchema {
+class UserPostBodySchema extends BaseValidationSchema_1.AppBaseBodySchema {
     constructor() {
         super(...arguments);
         this.username = Joi.string().required().valid('cosmic22', 'cosmic33');
@@ -1115,8 +897,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const AppRoute_1 = __webpack_require__(/*! ./AppRoute */ "./server/src/core/routing/AppRoute.ts");
-const errorsConfig_1 = __webpack_require__(/*! ./../../configuration/errors/errorsConfig */ "./server/src/configuration/errors/errorsConfig.ts");
-const GroupDocument_1 = __webpack_require__(/*! ../models/resource/group/GroupDocument */ "./server/src/core/models/resource/group/GroupDocument.ts");
 class GroupRoute extends AppRoute_1.default {
     constructor() {
         super(...arguments);
@@ -1124,21 +904,20 @@ class GroupRoute extends AppRoute_1.default {
     }
     post(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            try {
-                req.body;
-                let group = new GroupDocument_1.Group();
-                group.name = req.body.name;
-                group.allowedRoutes = req.body.allowedRoutes;
-                group.allowedServices = req.body.allowedServices;
-                yield group.save();
-                return res.json({
-                    success: 'Group Saved',
-                    status: 'ok'
-                });
-            }
-            catch (err) {
-                return res.json(errorsConfig_1.appMongoError.parse(err).get());
-            }
+            res.json({ placeholder: true });
+            // try {
+            //     let group = new Group();
+            //     group.name = req.body.name;
+            //     group.allowedRoutes = req.body.allowedRoutes;
+            //     group.allowedServices = req.body.allowedServices;
+            //     await group.save();
+            //     return res.json({
+            //         success: 'Group Saved',
+            //         status: 'ok'
+            //     })
+            // } catch(err) {
+            //     return res.json(appMongoError.parse(err).get());
+            // }
         });
     }
 }
@@ -1167,9 +946,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const AppRoute_1 = __webpack_require__(/*! ./AppRoute */ "./server/src/core/routing/AppRoute.ts");
-const errorsConfig_1 = __webpack_require__(/*! ./../../configuration/errors/errorsConfig */ "./server/src/configuration/errors/errorsConfig.ts");
-const UserDocument_1 = __webpack_require__(/*! ../models/resource/user/UserDocument */ "./server/src/core/models/resource/user/UserDocument.ts");
-const GroupDocument_1 = __webpack_require__(/*! ../models/resource/group/GroupDocument */ "./server/src/core/models/resource/group/GroupDocument.ts");
+const UserMongoModel_1 = __webpack_require__(/*! ./../models/resource/user/UserMongoModel */ "./server/src/core/models/resource/user/UserMongoModel.ts");
 class UserRoute extends AppRoute_1.AppRoute {
     constructor() {
         super(...arguments);
@@ -1177,68 +954,74 @@ class UserRoute extends AppRoute_1.AppRoute {
     }
     get(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (req.params.name) {
-                try {
-                    const user = yield UserDocument_1.User.findOne({
-                        username: req.params.name
-                    }).populate('group').exec();
-                    if (!user)
-                        return res.json(errorsConfig_1.appUnknownUserError.get());
-                    return res.json({
-                        user: user.username,
-                        group: user.group.name
-                    });
-                }
-                catch (err) {
-                    return res.json(errorsConfig_1.appMongoError.parse(err).get());
-                }
+            try {
+                const user = yield UserMongoModel_1.User.get().findOne({
+                    username: req.params.name
+                });
+                res.json(user);
             }
-            else {
-                let query = UserDocument_1.User.find();
-                if (req.query.country)
-                    query.where('country', req.query.country);
-                if (req.query.age)
-                    query.where('age').gt(req.query.age.gt).lt(req.query.age.lt);
-                let userCollection = yield query.sortAndPaginate(req)
-                    .populate('group')
-                    .exec();
-                if (!userCollection)
-                    return res.json(errorsConfig_1.appUnknownUserError.get());
-                return res.json(userCollection.map((user) => {
-                    return {
-                        user: user.username,
-                        group: user.group.name,
-                        country: user.country,
-                        age: user.age
-                    };
-                }));
+            catch (e) {
+                res.json(e);
             }
+            // if(req.params.name) {
+            //     try {
+            //         const user = await User.findOne({
+            //             username: req.params.name
+            //         }).populate('group').exec();
+            //         if(!user)
+            //             return res.json(appUnknownUserError.get());
+            //         return res.json({
+            //             user: user.username,
+            //             group: user.group.name
+            //         });
+            //     } catch(err) {
+            //         return res.json(appMongoError.parse(err).get());
+            //     }
+            // } else {
+            //     let query = User.find();
+            //     if(req.query.country)
+            //         query.where('country', req.query.country);
+            //     if(req.query.age)
+            //         query.where('age').gt(req.query.age.gt).lt(req.query.age.lt);
+            //     let userCollection = await (query as IUserDocumentQuery).sortAndPaginate(req)
+            //                                                   .populate('group')
+            //                                                   .exec();
+            //     if(!userCollection)
+            //         return res.json(appUnknownUserError.get());
+            //     return res.json(userCollection.map((user) => {
+            //         return {
+            //             user: user.username,
+            //             group: user.group.name,
+            //             country: user.country,
+            //             age: user.age
+            //         }
+            //     }))
+            // }
         });
     }
     post(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            let group;
-            try {
-                group = yield GroupDocument_1.Group.findOne({
-                    name: req.body.group
-                });
-            }
-            catch (err) {
-                return res.json(errorsConfig_1.appMongoError.parse(err).get());
-            }
-            if (!group)
-                return res.json(errorsConfig_1.appUnknownGroupError.get());
-            try {
-                req.body.group = group;
-                yield UserDocument_1.User.create(req.body);
-            }
-            catch (err) {
-                return res.json(errorsConfig_1.appMongoError.parse(err).get());
-            }
-            return res.json({
-                handshake: 'Hi, ' + req.body.username + ' welcome aboard',
-                status: 'ok'
-            });
+            res.json({ placeholder: true });
+            // let group: IGroup;
+            // try {
+            //     group = await Group.findOne({
+            //         name: req.body.group
+            //     });
+            // } catch(err) {
+            //     return res.json(appMongoError.parse(err).get());
+            // }
+            // if(!group) 
+            //     return res.json(appUnknownGroupError.get())
+            // try {
+            //     req.body.group = group;
+            //     await User.create(req.body);   
+            // } catch(err) {
+            //     return res.json(appMongoError.parse(err).get());
+            // }
+            // return res.json({
+            //     handshake: 'Hi, ' + req.body.username + ' welcome aboard',
+            //     status: 'ok'
+            // })
         });
     }
 }
@@ -1269,12 +1052,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const App_1 = __webpack_require__(/*! ./App */ "./server/src/App.ts");
 const http = __webpack_require__(/*! http */ "http");
 const AppLogger_1 = __webpack_require__(/*! ./core/lib/AppLogger */ "./server/src/core/lib/AppLogger.ts");
-const AppMongooseModelManager_1 = __webpack_require__(/*! ./core/lib/AppMongooseModelManager */ "./server/src/core/lib/AppMongooseModelManager.ts");
+const AppMongoDriver_1 = __webpack_require__(/*! ./core/lib/AppMongoDriver */ "./server/src/core/lib/AppMongoDriver.ts");
 const port = process.env.PORT || 3000;
 let start = () => __awaiter(this, void 0, void 0, function* () {
     try {
         //Bootstrapping server
-        yield AppMongooseModelManager_1.appMongooseModelManager.waitIndexesCreated();
+        yield AppMongoDriver_1.mongo.connect();
         http.createServer(App_1.default).listen(port, (err) => {
             if (err) {
                 return AppLogger_1.logger.error(err);
@@ -1348,14 +1131,14 @@ module.exports = require("joi");
 
 /***/ }),
 
-/***/ "mongoose":
-/*!***************************!*\
-  !*** external "mongoose" ***!
-  \***************************/
+/***/ "mongodb":
+/*!**************************!*\
+  !*** external "mongodb" ***!
+  \**************************/
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-module.exports = require("mongoose");
+module.exports = require("mongodb");
 
 /***/ }),
 

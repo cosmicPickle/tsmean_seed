@@ -1,7 +1,7 @@
 import * as Joi from 'joi';
 import { Request, Response, NextFunction } from 'express';
 import { AppMiddlewareFunction } from './../../AppMiddleware';
-import { userGetQuerySchema, userPostBodySchema } from './../../../models/resource/user/validation';
+import { userGetQuerySchema, userPostBodySchema } from './../../../models/resource/user/UserValidationSchema';
 import { appRouteValidationError } from './../../../../configuration/errors/errorsConfig';
 
 export class UserRouteValidatorMiddleware {

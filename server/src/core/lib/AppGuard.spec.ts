@@ -4,9 +4,6 @@ import { appGuard } from './AppGuard';
 import { AppServicePath } from '../models/AppServicePath';
 import { Request } from 'express';
 import * as sinon from 'sinon';
-import { Model } from 'mongoose';
-import { IUser } from './../models/resource/user/types';
-import { User } from './../models/resource/user/UserDocument';
 import { SinonStub } from 'sinon';
 
 describe('Library: AppGuard', () => {
@@ -193,325 +190,325 @@ describe('Library: AppGuard', () => {
         });
     });
 
-    describe('service()', () => {
+    // describe('service()', () => {
 
-        let req: Partial<Request>, execStub, findOneStub: SinonStub;
-        beforeEach(() => {
-            req = {
-                body: {
-                    __djwt: {
-                        sub: '5ad75dcf9855aa3fb5581464',
-                        scopes: [],
-                    }
-                },
-                method: 'get',
-                url: '/user/cosmic'
-            }
-            execStub = sinon.stub();
-            findOneStub = sinon.stub(User, 'findOne').returns({
-                populate: sinon.stub().returns({
-                    exec: execStub
-                })
-            } as Partial<Model<IUser>>);
-        });
+    //     let req: Partial<Request>, execStub, findOneStub: SinonStub;
+    //     beforeEach(() => {
+    //         req = {
+    //             body: {
+    //                 __djwt: {
+    //                     sub: '5ad75dcf9855aa3fb5581464',
+    //                     scopes: [],
+    //                 }
+    //             },
+    //             method: 'get',
+    //             url: '/user/cosmic'
+    //         }
+    //         execStub = sinon.stub();
+    //         findOneStub = sinon.stub(User, 'findOne').returns({
+    //             populate: sinon.stub().returns({
+    //                 exec: execStub
+    //             })
+    //         } as Partial<Model<IUser>>);
+    //     });
 
-        afterEach(() => {
-            findOneStub.restore();
-        });
+    //     afterEach(() => {
+    //         findOneStub.restore();
+    //     });
 
-        it('should return false if the __djwt field is empty', async () => {
-            req.body.__djwt = {};
+    //     it('should return false if the __djwt field is empty', async () => {
+    //         req.body.__djwt = {};
             
-            let res = await appGuard.service(req as Request);
+    //         let res = await appGuard.service(req as Request);
 
-            expect(res).to.be.false;
-            sinon.assert.notCalled(execStub);
-        });
+    //         expect(res).to.be.false;
+    //         sinon.assert.notCalled(execStub);
+    //     });
         
-        it('no scopes provided with jwt: should call findOne', async () => {
-            execStub.resolves({
-                allowedServices: [{
-                    method: 'get',
-                    path: '/user/cosmic'
-                }],
-                group: {
-                    allowedServices: []
-                }
-            } as IUser)
+    //     it('no scopes provided with jwt: should call findOne', async () => {
+    //         execStub.resolves({
+    //             allowedServices: [{
+    //                 method: 'get',
+    //                 path: '/user/cosmic'
+    //             }],
+    //             group: {
+    //                 allowedServices: []
+    //             }
+    //         } as IUser)
 
-            let res = await appGuard.service(req as Request);
-            expect(findOneStub.called).to.be.true;
-        });
+    //         let res = await appGuard.service(req as Request);
+    //         expect(findOneStub.called).to.be.true;
+    //     });
 
-        it('no scopes provided with jwt: should return true if there is a match from user permissions', async () => {
-            execStub.resolves({
-                allowedServices: [{
-                    method: 'get',
-                    path: '/user/cosmic'
-                }],
-                group: {
-                    allowedServices: []
-                }
-            } as IUser)
+    //     it('no scopes provided with jwt: should return true if there is a match from user permissions', async () => {
+    //         execStub.resolves({
+    //             allowedServices: [{
+    //                 method: 'get',
+    //                 path: '/user/cosmic'
+    //             }],
+    //             group: {
+    //                 allowedServices: []
+    //             }
+    //         } as IUser)
 
-            let res = await appGuard.service(req as Request);
-            expect(res).to.be.true;
-        });
+    //         let res = await appGuard.service(req as Request);
+    //         expect(res).to.be.true;
+    //     });
 
-        it('no scopes provided with jwt: should return true if there is a match from group permissions', async () => {
-            execStub.resolves({
-                allowedServices: [],
-                group: {
-                    allowedServices: [{
-                        method: 'get',
-                        path: '/user/:name?'
-                    }]
-                }
-            } as IUser)
+    //     it('no scopes provided with jwt: should return true if there is a match from group permissions', async () => {
+    //         execStub.resolves({
+    //             allowedServices: [],
+    //             group: {
+    //                 allowedServices: [{
+    //                     method: 'get',
+    //                     path: '/user/:name?'
+    //                 }]
+    //             }
+    //         } as IUser)
 
-            let res = await appGuard.service(req as Request);
-            expect(res).to.be.true;
-        });
+    //         let res = await appGuard.service(req as Request);
+    //         expect(res).to.be.true;
+    //     });
 
-        it('no scopes provided with jwt: should return false if there is no match for user', async () => {
-            execStub.resolves(null)
+    //     it('no scopes provided with jwt: should return false if there is no match for user', async () => {
+    //         execStub.resolves(null)
 
-            let res = await appGuard.service(req as Request);
-            expect(res).to.be.false;
-        });
+    //         let res = await appGuard.service(req as Request);
+    //         expect(res).to.be.false;
+    //     });
 
-        it('no scopes provided with jwt: should return false if there is no match for path', async () => {
-            execStub.resolves({
-                allowedServices: [{
-                    method: 'get',
-                    path: '/user/cosmic1'
-                },{
-                    method: 'post',
-                    path: '/user/cosmic'
-                }],
-                group: {
-                    allowedServices: [{
-                        method: 'get',
-                        path: '/group/:name?'
-                    }]
-                }
-            } as IUser)
+    //     it('no scopes provided with jwt: should return false if there is no match for path', async () => {
+    //         execStub.resolves({
+    //             allowedServices: [{
+    //                 method: 'get',
+    //                 path: '/user/cosmic1'
+    //             },{
+    //                 method: 'post',
+    //                 path: '/user/cosmic'
+    //             }],
+    //             group: {
+    //                 allowedServices: [{
+    //                     method: 'get',
+    //                     path: '/group/:name?'
+    //                 }]
+    //             }
+    //         } as IUser)
 
-            let res = await appGuard.service(req as Request);
-            expect(res).to.be.false;
-        });
+    //         let res = await appGuard.service(req as Request);
+    //         expect(res).to.be.false;
+    //     });
 
-        it('no scopes provided with jwt: should save the new scopes in the __djwt', async () => {
-            execStub.resolves({
-                allowedServices: [{
-                    method: 'get',
-                    path: '/user/cosmic1'
-                },{
-                    method: 'post',
-                    path: '/user/cosmic'
-                }],
-                group: {
-                    allowedServices: [{
-                        method: 'get',
-                        path: '/group/:name?'
-                    }]
-                }
-            } as IUser)
+    //     it('no scopes provided with jwt: should save the new scopes in the __djwt', async () => {
+    //         execStub.resolves({
+    //             allowedServices: [{
+    //                 method: 'get',
+    //                 path: '/user/cosmic1'
+    //             },{
+    //                 method: 'post',
+    //                 path: '/user/cosmic'
+    //             }],
+    //             group: {
+    //                 allowedServices: [{
+    //                     method: 'get',
+    //                     path: '/group/:name?'
+    //                 }]
+    //             }
+    //         } as IUser)
 
-            let res = await appGuard.service(req as Request);
-            expect(req.body.__djwt.scopes.services).to.eql([{
-                method: 'get',
-                path: '/user/cosmic1'
-            },{
-                method: 'post',
-                path: '/user/cosmic'
-            }, {
-                method: 'get',
-                path: '/group/:name?'
-            }]);
-        });
+    //         let res = await appGuard.service(req as Request);
+    //         expect(req.body.__djwt.scopes.services).to.eql([{
+    //             method: 'get',
+    //             path: '/user/cosmic1'
+    //         },{
+    //             method: 'post',
+    //             path: '/user/cosmic'
+    //         }, {
+    //             method: 'get',
+    //             path: '/group/:name?'
+    //         }]);
+    //     });
 
-        it('should not call execStub if provided jwt scopes', async() => {
-            req.body.__djwt.scopes.services = [{
-                method: 'get',
-                path: '/user/cosmic1'
-            },{
-                method: 'post',
-                path: '/user/cosmic'
-            }, {
-                method: 'get',
-                path: '/group/:name?'
-            }];
+    //     it('should not call execStub if provided jwt scopes', async() => {
+    //         req.body.__djwt.scopes.services = [{
+    //             method: 'get',
+    //             path: '/user/cosmic1'
+    //         },{
+    //             method: 'post',
+    //             path: '/user/cosmic'
+    //         }, {
+    //             method: 'get',
+    //             path: '/group/:name?'
+    //         }];
             
 
-            let res = await appGuard.service(req as Request);
-            sinon.assert.notCalled(execStub);
-        });
+    //         let res = await appGuard.service(req as Request);
+    //         sinon.assert.notCalled(execStub);
+    //     });
 
-        it('should return false if no match is found on provided jwt scopes', async() => {
-            req.body.__djwt.scopes.services = [{
-                method: 'get',
-                path: '/user/cosmic1'
-            },{
-                method: 'post',
-                path: '/user/cosmic'
-            }, {
-                method: 'get',
-                path: '/group/:name?'
-            }];
+    //     it('should return false if no match is found on provided jwt scopes', async() => {
+    //         req.body.__djwt.scopes.services = [{
+    //             method: 'get',
+    //             path: '/user/cosmic1'
+    //         },{
+    //             method: 'post',
+    //             path: '/user/cosmic'
+    //         }, {
+    //             method: 'get',
+    //             path: '/group/:name?'
+    //         }];
 
-            let res = await appGuard.service(req as Request);
-            expect(res).to.be.false;
-        });
+    //         let res = await appGuard.service(req as Request);
+    //         expect(res).to.be.false;
+    //     });
 
-        it('should return true if a match is found on provided jwt scopes', async() => {
-            req.body.__djwt.scopes.services = [{
-                method: 'get',
-                path: '/user/cosmic'
-            },{
-                method: 'post',
-                path: '/user/cosmic'
-            }, {
-                method: 'get',
-                path: '/group/:name?'
-            }];
+    //     it('should return true if a match is found on provided jwt scopes', async() => {
+    //         req.body.__djwt.scopes.services = [{
+    //             method: 'get',
+    //             path: '/user/cosmic'
+    //         },{
+    //             method: 'post',
+    //             path: '/user/cosmic'
+    //         }, {
+    //             method: 'get',
+    //             path: '/group/:name?'
+    //         }];
 
-            let res = await appGuard.service(req as Request);
-            expect(res).to.be.true;
-        });
-    });
+    //         let res = await appGuard.service(req as Request);
+    //         expect(res).to.be.true;
+    //     });
+    // });
 
-    describe('route()', () => {
+    // describe('route()', () => {
 
-        let req: Partial<Request>, execStub, findOneStub: SinonStub;
-        beforeEach(() => {
-            req = {
-                body: {
-                    route: '/profile/view/',
-                    __djwt: {
-                        sub: '5ad75dcf9855aa3fb5581464',
-                        scopes: [],
-                    }
-                },
-                method: 'get',
-                url: '/user/cosmic'
-            }
-            execStub = sinon.stub();
-            findOneStub = sinon.stub(User, 'findOne').returns({
-                populate: sinon.stub().returns({
-                    exec: execStub
-                })
-            } as Partial<Model<IUser>>);
-        });
+    //     let req: Partial<Request>, execStub, findOneStub: SinonStub;
+    //     beforeEach(() => {
+    //         req = {
+    //             body: {
+    //                 route: '/profile/view/',
+    //                 __djwt: {
+    //                     sub: '5ad75dcf9855aa3fb5581464',
+    //                     scopes: [],
+    //                 }
+    //             },
+    //             method: 'get',
+    //             url: '/user/cosmic'
+    //         }
+    //         execStub = sinon.stub();
+    //         findOneStub = sinon.stub(User, 'findOne').returns({
+    //             populate: sinon.stub().returns({
+    //                 exec: execStub
+    //             })
+    //         } as Partial<Model<IUser>>);
+    //     });
 
-        afterEach(() => {
-            findOneStub.restore();
-        });
+    //     afterEach(() => {
+    //         findOneStub.restore();
+    //     });
 
-        it('should return false if the __djwt field is empty', async () => {
-            req.body.__djwt = {};
+    //     it('should return false if the __djwt field is empty', async () => {
+    //         req.body.__djwt = {};
             
-            let res = await appGuard.route(req as Request);
+    //         let res = await appGuard.route(req as Request);
 
-            expect(res).to.be.false;
-            sinon.assert.notCalled(execStub);
-        });
+    //         expect(res).to.be.false;
+    //         sinon.assert.notCalled(execStub);
+    //     });
 
-        it('should return false if the route field is empty', async () => {
-            req.body.route = null;
+    //     it('should return false if the route field is empty', async () => {
+    //         req.body.route = null;
             
-            let res = await appGuard.route(req as Request);
+    //         let res = await appGuard.route(req as Request);
 
-            expect(res).to.be.false;
-            sinon.assert.notCalled(execStub);
-        });
+    //         expect(res).to.be.false;
+    //         sinon.assert.notCalled(execStub);
+    //     });
         
-        it('no scopes provided with jwt: should call findOne', async () => {
-            execStub.resolves({
-                allowedRoutes: ['/profile/view'],
-                group: {
-                    allowedRoutes: []
-                }
-            } as IUser)
+    //     it('no scopes provided with jwt: should call findOne', async () => {
+    //         execStub.resolves({
+    //             allowedRoutes: ['/profile/view'],
+    //             group: {
+    //                 allowedRoutes: []
+    //             }
+    //         } as IUser)
 
-            let res = await appGuard.route(req as Request);
-            expect(findOneStub.called).to.be.true;
-        });
+    //         let res = await appGuard.route(req as Request);
+    //         expect(findOneStub.called).to.be.true;
+    //     });
 
-        it('no scopes provided with jwt: should return true if there is a match from user permissions', async () => {
-            execStub.resolves({
-                allowedRoutes: ['/profile/view'],
-                group: {
-                    allowedRoutes: []
-                }
-            } as IUser)
+    //     it('no scopes provided with jwt: should return true if there is a match from user permissions', async () => {
+    //         execStub.resolves({
+    //             allowedRoutes: ['/profile/view'],
+    //             group: {
+    //                 allowedRoutes: []
+    //             }
+    //         } as IUser)
 
-            let res = await appGuard.route(req as Request);
-            expect(res).to.be.true;
-        });
+    //         let res = await appGuard.route(req as Request);
+    //         expect(res).to.be.true;
+    //     });
 
-        it('no scopes provided with jwt: should return true if there is a match from group permissions', async () => {
-            execStub.resolves({
-                allowedRoutes: [],
-                group: {
-                    allowedRoutes: ['/profile/:action']
-                }
-            } as IUser)
+    //     it('no scopes provided with jwt: should return true if there is a match from group permissions', async () => {
+    //         execStub.resolves({
+    //             allowedRoutes: [],
+    //             group: {
+    //                 allowedRoutes: ['/profile/:action']
+    //             }
+    //         } as IUser)
 
-            let res = await appGuard.route(req as Request);
-            expect(res).to.be.true;
-        });
+    //         let res = await appGuard.route(req as Request);
+    //         expect(res).to.be.true;
+    //     });
 
-        it('no scopes provided with jwt: should return false if there is no match for user', async () => {
-            execStub.resolves(null)
+    //     it('no scopes provided with jwt: should return false if there is no match for user', async () => {
+    //         execStub.resolves(null)
 
-            let res = await appGuard.route(req as Request);
-            expect(res).to.be.false;
-        });
+    //         let res = await appGuard.route(req as Request);
+    //         expect(res).to.be.false;
+    //     });
 
-        it('no scopes provided with jwt: should return false if there is no match for path', async () => {
-            execStub.resolves({
-                allowedRoutes: ['/profile/view/me', '/home'],
-                group: {
-                    allowedRoutes: ['/news']
-                }
-            } as IUser)
+    //     it('no scopes provided with jwt: should return false if there is no match for path', async () => {
+    //         execStub.resolves({
+    //             allowedRoutes: ['/profile/view/me', '/home'],
+    //             group: {
+    //                 allowedRoutes: ['/news']
+    //             }
+    //         } as IUser)
 
-            let res = await appGuard.route(req as Request);
-            expect(res).to.be.false;
-        });
+    //         let res = await appGuard.route(req as Request);
+    //         expect(res).to.be.false;
+    //     });
 
-        it('no scopes provided with jwt: should save the new scopes in the __djwt', async () => {
-            execStub.resolves({
-                allowedRoutes: ['/profile/view/me', '/home'],
-                group: {
-                    allowedRoutes: ['/news']
-                }
-            } as IUser)
+    //     it('no scopes provided with jwt: should save the new scopes in the __djwt', async () => {
+    //         execStub.resolves({
+    //             allowedRoutes: ['/profile/view/me', '/home'],
+    //             group: {
+    //                 allowedRoutes: ['/news']
+    //             }
+    //         } as IUser)
 
-            let res = await appGuard.route(req as Request);
-            expect(req.body.__djwt.scopes.routes).to.eql(['/profile/view/me', '/home', '/news']);
-        });
+    //         let res = await appGuard.route(req as Request);
+    //         expect(req.body.__djwt.scopes.routes).to.eql(['/profile/view/me', '/home', '/news']);
+    //     });
 
-        it('should not call execStub if provided jwt scopes', async() => {
-            req.body.__djwt.scopes.routes = ['/profile/view/me', '/home', '/news'];
+    //     it('should not call execStub if provided jwt scopes', async() => {
+    //         req.body.__djwt.scopes.routes = ['/profile/view/me', '/home', '/news'];
 
-            let res = await appGuard.route(req as Request);
-            sinon.assert.notCalled(execStub);
-        });
+    //         let res = await appGuard.route(req as Request);
+    //         sinon.assert.notCalled(execStub);
+    //     });
 
-        it('should return false if no match is found on provided jwt scopes', async() => {
-            req.body.__djwt.scopes.routes = ['/profile/view/me', '/home', '/news'];
+    //     it('should return false if no match is found on provided jwt scopes', async() => {
+    //         req.body.__djwt.scopes.routes = ['/profile/view/me', '/home', '/news'];
 
-            let res = await appGuard.route(req as Request);
-            expect(res).to.be.false;
-        });
+    //         let res = await appGuard.route(req as Request);
+    //         expect(res).to.be.false;
+    //     });
 
-        it('should return true if a match is found on provided jwt scopes', async() => {
-            req.body.__djwt.scopes.routes = ['/profile/view', '/home', '/news'];
+    //     it('should return true if a match is found on provided jwt scopes', async() => {
+    //         req.body.__djwt.scopes.routes = ['/profile/view', '/home', '/news'];
 
-            let res = await appGuard.route(req as Request);
-            expect(res).to.be.true;
-        });
-    })
+    //         let res = await appGuard.route(req as Request);
+    //         expect(res).to.be.true;
+    //     });
+    // })
 })

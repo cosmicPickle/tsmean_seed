@@ -1,7 +1,5 @@
 import * as pathToRegexp from 'path-to-regexp'
 import { Request } from 'express';
-import { User } from './../models/resource/user/UserDocument'
-import { mongoose } from './../../configuration/db/mongo';
 import { AppServicePath } from '../models/AppServicePath';
 import { logger } from './AppLogger';
 export class AppGuard {
@@ -34,9 +32,10 @@ export class AppGuard {
             return false;
 
         if(!req.body.__djwt.scopes || !req.body.__djwt.scopes.services) {
-            let user = await User.findOne({
-                _id: mongoose.Types.ObjectId(req.body.__djwt.sub)
-            }).populate('group').exec();
+            let user = null;
+            // let user = await User.findOne({
+            //     _id: mongoose.Types.ObjectId(req.body.__djwt.sub)
+            // }).populate('group').exec();
 
             if(!user)
                 return false;
@@ -62,9 +61,10 @@ export class AppGuard {
             return false;
 
         if(!req.body.__djwt.scopes || !req.body.__djwt.scopes.routes) {
-            let user = await User.findOne({
-                _id: mongoose.Types.ObjectId(req.body.__djwt.sub)
-            }).populate('group').exec();
+            let user = null;
+            // let user = await User.findOne({
+            //     _id: mongoose.Types.ObjectId(req.body.__djwt.sub)
+            // }).populate('group').exec();
 
             if(!user)
                 return false;

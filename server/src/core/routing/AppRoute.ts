@@ -2,12 +2,12 @@ import { appInvalidRouteError } from './../../configuration/errors/errorsConfig'
 import { Request, Response, Router } from 'express';
 import { AppMiddlewareMethod} from './../middlewares/AppMiddleware'
 import middlewaresConfig from './../../configuration/middlewares/middlewaresConfig';
-import { io } from '../models/resource/base/types';
+import * as base from '../models/resource/base/BaseValidationSchemaTypes';
 export interface IAppRoute {
-    get: <T extends io.AppBaseRequest<any, any>>(req: T, res: Response) => void
-    post: <T extends io.AppBaseRequest<any, any>>(req: T, res: Response) => void
-    put: <T extends io.AppBaseRequest<any, any>>(req: T, res: Response) => void
-    delete: <T extends io.AppBaseRequest<any, any>>(req: T, res: Response) => void
+    get: <T extends base.AppBaseRequest<any, any>>(req: T, res: Response) => void
+    post: <T extends base.AppBaseRequest<any, any>>(req: T, res: Response) => void
+    put: <T extends base.AppBaseRequest<any, any>>(req: T, res: Response) => void
+    delete: <T extends base.AppBaseRequest<any, any>>(req: T, res: Response) => void
     mount: (router: Router) => void
 }
 
@@ -17,19 +17,19 @@ export class AppRoute implements IAppRoute {
 
     constructor() { }
 
-    get<T extends io.AppBaseRequest<any, any>>(req: T, res: Response) {
+    get<T extends base.AppBaseRequest<any, any>>(req: T, res: Response) {
         res.json(appInvalidRouteError.get());
     }
 
-    post<T extends io.AppBaseRequest<any, any>>(req: T, res: Response) {
+    post<T extends base.AppBaseRequest<any, any>>(req: T, res: Response) {
         res.json(appInvalidRouteError.get());
     }
 
-    put<T extends io.AppBaseRequest<any, any>>(req: T, res: Response) {
+    put<T extends base.AppBaseRequest<any, any>>(req: T, res: Response) {
         res.json(appInvalidRouteError.get());
     }
 
-    delete<T extends io.AppBaseRequest<any, any>>(req: T, res: Response) {
+    delete<T extends base.AppBaseRequest<any, any>>(req: T, res: Response) {
         res.json(appInvalidRouteError.get());
     }
 
