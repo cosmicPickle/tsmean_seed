@@ -8,16 +8,16 @@ export class UserGetQuerySchema extends AppBaseQuerySchema {
 }
 
 export class UserPostBodySchema extends AppBaseBodySchema {
-    username = Joi.string().required().min(2);
+    username = Joi.string().required().valid('cosmic22', 'cosmic33');
     password = Joi.string().required();
     age = Joi.number().required();
     country = Joi.string().min(2).max(2).required();
     group = Joi.string().required();
-    allowedServices = Joi.object().keys({
+    allowedServices = Joi.array().items(Joi.object().optional().keys({
         method: Joi.string().required(),
         path: Joi.string().required()
-    })
-    allowedRoutes = Joi.array().items(Joi.string().required())
+    }));
+    allowedRoutes = Joi.array().items(Joi.string()).optional();
 }
 
 export const userGetQuerySchema = new UserGetQuerySchema();

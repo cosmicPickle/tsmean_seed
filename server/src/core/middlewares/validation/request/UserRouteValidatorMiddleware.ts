@@ -18,6 +18,7 @@ export class UserRouteValidatorMiddleware {
             await userPostBodySchema.validate(req.body);
             next();
         } catch(e) {
+            console.log(e)
             res.json(appRouteValidationError.parse(e as Joi.ValidationError).get())
         }
         

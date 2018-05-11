@@ -2,24 +2,10 @@ import { Document, Model } from "mongoose";
 import { BaseDocument } from './../base/BaseDocument'
 import * as types from './types';
 import * as base from '../base/types';
+import { GroupDocumentSchema } from './GroupDocumentSchema';
 class GroupDocument extends BaseDocument<types.IGroup> {
     name = 'Group';
-    schema = {
-        name: {
-            type: String,
-            required: true,
-            unique: true
-        },
-        allowedServices: {
-            type: [{
-                method: String,
-                path: String
-            }]
-        },
-        allowedRoutes: {
-            type: [String]
-        }
-    }
+    schema = GroupDocumentSchema;
     methods = { }
 
 }

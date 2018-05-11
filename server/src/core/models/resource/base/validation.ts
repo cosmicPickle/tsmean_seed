@@ -21,6 +21,7 @@ export class BaseSchema {
                 _schema = (_schema as Joi.ObjectSchema).keys(keys);
 
                 const { error, value } = Joi.validate(obj, _schema);
+                
                 if(error)
                     throw error;
 

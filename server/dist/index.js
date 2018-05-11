@@ -209,8 +209,8 @@ exports.default = exports.middlewares;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const UserRoute_1 = __webpack_require__(/*! ./../../routes/UserRoute */ "./server/src/routes/UserRoute.ts");
-const GroupRoute_1 = __webpack_require__(/*! ./../../routes/GroupRoute */ "./server/src/routes/GroupRoute.ts");
+const UserRoute_1 = __webpack_require__(/*! ./../../core/routing/UserRoute */ "./server/src/core/routing/UserRoute.ts");
+const GroupRoute_1 = __webpack_require__(/*! ./../../core/routing/GroupRoute */ "./server/src/core/routing/GroupRoute.ts");
 const DefaultRoute_1 = __webpack_require__(/*! ./../../core/routing/DefaultRoute */ "./server/src/core/routing/DefaultRoute.ts");
 exports.routesConfig = [
     DefaultRoute_1.defaultRoute,
@@ -381,13 +381,14 @@ const AppError_1 = __webpack_require__(/*! ./AppError */ "./server/src/core/erro
 class AppRouteValidationError extends AppError_1.AppError {
     constructor() {
         super(...arguments);
-        this.message = "invalid_route_params";
+        this.message = "invalid_request";
     }
     parse(error) {
         this.payload = {
             errors: [],
             invalid: error._object
         };
+        console.log(error);
         error.details.forEach((e) => {
             this.payload.errors.push({
                 path: e.path,
@@ -638,6 +639,7 @@ class UserRouteValidatorMiddleware {
                 next();
             }
             catch (e) {
+                console.log(e);
                 res.json(errorsConfig_1.appRouteValidationError.parse(e).get());
             }
         });
@@ -822,31 +824,47 @@ exports.AppBaseBodySchema = AppBaseBodySchema;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const BaseDocument_1 = __webpack_require__(/*! ./../base/BaseDocument */ "./server/src/core/models/resource/base/BaseDocument.ts");
+const GroupDocumentSchema_1 = __webpack_require__(/*! ./GroupDocumentSchema */ "./server/src/core/models/resource/group/GroupDocumentSchema.ts");
 class GroupDocument extends BaseDocument_1.BaseDocument {
     constructor() {
         super(...arguments);
         this.name = 'Group';
-        this.schema = {
-            name: {
-                type: String,
-                required: true,
-                unique: true
-            },
-            allowedServices: {
-                type: [{
-                        method: String,
-                        path: String
-                    }]
-            },
-            allowedRoutes: {
-                type: [String]
-            }
-        };
+        this.schema = GroupDocumentSchema_1.GroupDocumentSchema;
         this.methods = {};
     }
 }
 exports.Group = ((new GroupDocument()).model());
 exports.default = exports.Group;
+
+
+/***/ }),
+
+/***/ "./server/src/core/models/resource/group/GroupDocumentSchema.ts":
+/*!**********************************************************************!*\
+  !*** ./server/src/core/models/resource/group/GroupDocumentSchema.ts ***!
+  \**********************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.GroupDocumentSchema = {
+    name: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    allowedServices: {
+        type: [{
+                method: String,
+                path: String
+            }]
+    },
+    allowedRoutes: {
+        type: [String]
+    }
+};
 
 
 /***/ }),
@@ -896,20 +914,11 @@ exports.default = exports.User;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongo_1 = __webpack_require__(/*! ./../../../../configuration/db/mongo */ "./server/src/configuration/db/mongo.ts");
-const validation_1 = __webpack_require__(/*! ./validation */ "./server/src/core/models/resource/user/validation.ts");
 exports.UserDocumentSchema = {
     username: {
         type: String,
         required: true,
         unique: true,
-        validate: {
-            isAsync: true,
-            validator: function (val, cb) {
-                const { error, value } = validation_1.userPostBodySchema.username.validate(val);
-                cb(!error, JSON.stringify(error));
-            },
-            message: null
-        }
     },
     password: {
         type: String,
@@ -966,16 +975,16 @@ exports.UserGetQuerySchema = UserGetQuerySchema;
 class UserPostBodySchema extends validation_1.AppBaseBodySchema {
     constructor() {
         super(...arguments);
-        this.username = Joi.string().required().min(2);
+        this.username = Joi.string().required().valid('cosmic22', 'cosmic33');
         this.password = Joi.string().required();
         this.age = Joi.number().required();
         this.country = Joi.string().min(2).max(2).required();
         this.group = Joi.string().required();
-        this.allowedServices = Joi.object().keys({
+        this.allowedServices = Joi.array().items(Joi.object().optional().keys({
             method: Joi.string().required(),
             path: Joi.string().required()
-        });
-        this.allowedRoutes = Joi.array().items(Joi.string().required());
+        }));
+        this.allowedRoutes = Joi.array().items(Joi.string()).optional();
     }
 }
 exports.UserPostBodySchema = UserPostBodySchema;
@@ -1087,10 +1096,10 @@ exports.defaultRoute = new DefaultRoute();
 
 /***/ }),
 
-/***/ "./server/src/index.ts":
-/*!*****************************!*\
-  !*** ./server/src/index.ts ***!
-  \*****************************/
+/***/ "./server/src/core/routing/GroupRoute.ts":
+/*!***********************************************!*\
+  !*** ./server/src/core/routing/GroupRoute.ts ***!
+  \***********************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -1105,53 +1114,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const App_1 = __webpack_require__(/*! ./App */ "./server/src/App.ts");
-const http = __webpack_require__(/*! http */ "http");
-const AppLogger_1 = __webpack_require__(/*! ./core/lib/AppLogger */ "./server/src/core/lib/AppLogger.ts");
-const AppMongooseModelManager_1 = __webpack_require__(/*! ./core/lib/AppMongooseModelManager */ "./server/src/core/lib/AppMongooseModelManager.ts");
-const port = process.env.PORT || 3000;
-let start = () => __awaiter(this, void 0, void 0, function* () {
-    try {
-        //Bootstrapping server
-        yield AppMongooseModelManager_1.appMongooseModelManager.waitIndexesCreated();
-        http.createServer(App_1.default).listen(port, (err) => {
-            if (err) {
-                return AppLogger_1.logger.error(err);
-            }
-            return AppLogger_1.logger.info(`server is listening on ${port} ${"development"}`);
-        });
-    }
-    catch (err) {
-        AppLogger_1.logger.error(err);
-    }
-    return App_1.default;
-});
-exports.server = start();
-
-
-/***/ }),
-
-/***/ "./server/src/routes/GroupRoute.ts":
-/*!*****************************************!*\
-  !*** ./server/src/routes/GroupRoute.ts ***!
-  \*****************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const AppRoute_1 = __webpack_require__(/*! ./../core/routing/AppRoute */ "./server/src/core/routing/AppRoute.ts");
-const errorsConfig_1 = __webpack_require__(/*! ./../configuration/errors/errorsConfig */ "./server/src/configuration/errors/errorsConfig.ts");
-const GroupDocument_1 = __webpack_require__(/*! ../core/models/resource/group/GroupDocument */ "./server/src/core/models/resource/group/GroupDocument.ts");
+const AppRoute_1 = __webpack_require__(/*! ./AppRoute */ "./server/src/core/routing/AppRoute.ts");
+const errorsConfig_1 = __webpack_require__(/*! ./../../configuration/errors/errorsConfig */ "./server/src/configuration/errors/errorsConfig.ts");
+const GroupDocument_1 = __webpack_require__(/*! ../models/resource/group/GroupDocument */ "./server/src/core/models/resource/group/GroupDocument.ts");
 class GroupRoute extends AppRoute_1.default {
     constructor() {
         super(...arguments);
@@ -1183,10 +1148,10 @@ exports.groupRoute = new GroupRoute();
 
 /***/ }),
 
-/***/ "./server/src/routes/UserRoute.ts":
-/*!****************************************!*\
-  !*** ./server/src/routes/UserRoute.ts ***!
-  \****************************************/
+/***/ "./server/src/core/routing/UserRoute.ts":
+/*!**********************************************!*\
+  !*** ./server/src/core/routing/UserRoute.ts ***!
+  \**********************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -1201,10 +1166,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const AppRoute_1 = __webpack_require__(/*! ../core/routing/AppRoute */ "./server/src/core/routing/AppRoute.ts");
-const errorsConfig_1 = __webpack_require__(/*! ../configuration/errors/errorsConfig */ "./server/src/configuration/errors/errorsConfig.ts");
-const UserDocument_1 = __webpack_require__(/*! ../core/models/resource/user/UserDocument */ "./server/src/core/models/resource/user/UserDocument.ts");
-const GroupDocument_1 = __webpack_require__(/*! ../core/models/resource/group/GroupDocument */ "./server/src/core/models/resource/group/GroupDocument.ts");
+const AppRoute_1 = __webpack_require__(/*! ./AppRoute */ "./server/src/core/routing/AppRoute.ts");
+const errorsConfig_1 = __webpack_require__(/*! ./../../configuration/errors/errorsConfig */ "./server/src/configuration/errors/errorsConfig.ts");
+const UserDocument_1 = __webpack_require__(/*! ../models/resource/user/UserDocument */ "./server/src/core/models/resource/user/UserDocument.ts");
+const GroupDocument_1 = __webpack_require__(/*! ../models/resource/group/GroupDocument */ "./server/src/core/models/resource/group/GroupDocument.ts");
 class UserRoute extends AppRoute_1.AppRoute {
     constructor() {
         super(...arguments);
@@ -1252,27 +1217,77 @@ class UserRoute extends AppRoute_1.AppRoute {
     }
     post(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
+            let group;
             try {
-                const group = yield GroupDocument_1.Group.findOne({
+                group = yield GroupDocument_1.Group.findOne({
                     name: req.body.group
-                });
-                if (!group)
-                    return res.json(errorsConfig_1.appUnknownGroupError.get());
-                req.body.group = group;
-                yield UserDocument_1.User.create(req.body);
-                return res.json({
-                    handshake: 'Hi, ' + req.body.username + ' welcome aboard',
-                    status: 'ok'
                 });
             }
             catch (err) {
                 return res.json(errorsConfig_1.appMongoError.parse(err).get());
             }
+            if (!group)
+                return res.json(errorsConfig_1.appUnknownGroupError.get());
+            try {
+                req.body.group = group;
+                yield UserDocument_1.User.create(req.body);
+            }
+            catch (err) {
+                return res.json(errorsConfig_1.appMongoError.parse(err).get());
+            }
+            return res.json({
+                handshake: 'Hi, ' + req.body.username + ' welcome aboard',
+                status: 'ok'
+            });
         });
     }
 }
 exports.UserRoute = UserRoute;
 exports.userRoute = new UserRoute();
+
+
+/***/ }),
+
+/***/ "./server/src/index.ts":
+/*!*****************************!*\
+  !*** ./server/src/index.ts ***!
+  \*****************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const App_1 = __webpack_require__(/*! ./App */ "./server/src/App.ts");
+const http = __webpack_require__(/*! http */ "http");
+const AppLogger_1 = __webpack_require__(/*! ./core/lib/AppLogger */ "./server/src/core/lib/AppLogger.ts");
+const AppMongooseModelManager_1 = __webpack_require__(/*! ./core/lib/AppMongooseModelManager */ "./server/src/core/lib/AppMongooseModelManager.ts");
+const port = process.env.PORT || 3000;
+let start = () => __awaiter(this, void 0, void 0, function* () {
+    try {
+        //Bootstrapping server
+        yield AppMongooseModelManager_1.appMongooseModelManager.waitIndexesCreated();
+        http.createServer(App_1.default).listen(port, (err) => {
+            if (err) {
+                return AppLogger_1.logger.error(err);
+            }
+            return AppLogger_1.logger.info(`server is listening on ${port} ${"development"}`);
+        });
+    }
+    catch (err) {
+        AppLogger_1.logger.error(err);
+    }
+    return App_1.default;
+});
+exports.server = start();
 
 
 /***/ }),

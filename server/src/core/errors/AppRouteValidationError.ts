@@ -1,7 +1,7 @@
 import { AppError } from "./AppError";
 import * as Joi from 'joi';
 export class AppRouteValidationError extends AppError {
-    protected message = "invalid_route_params"
+    protected message = "invalid_request"
 
     parse(error: Joi.ValidationError): AppRouteValidationError {
 
@@ -9,7 +9,7 @@ export class AppRouteValidationError extends AppError {
             errors: [],
             invalid: error._object
         }
-
+        console.log(error);
         error.details.forEach((e) => {
             (this.payload as any).errors.push({
                 path: e.path,

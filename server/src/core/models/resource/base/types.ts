@@ -1,38 +1,6 @@
 import { Model, Document, DocumentQuery, Schema } from "mongoose";
 import { Request } from "express";
 
-/**
- * Mongodb Types
- */
-export namespace mongo {
-    export type BaseDocumentMethods = {
-        [propName: string] : (...args: any[]) => any
-    }
-    
-    export type DocumentConfig = {
-        resultsPerPage: number;
-    }
-    
-    export interface IBaseDocument {
-        name: string;
-        schema: any;
-        methods?: BaseDocumentMethods;
-        statics?: BaseDocumentMethods;
-    }
-    
-    export interface IBaseModel<T extends Document> extends Model<T> {
-        waitIndexesCreated(): Promise<any>;
-    }
-    
-    export interface IBaseDocumentQuery<DocType extends Document> extends DocumentQuery<DocType[], DocType> {
-        sortAndPaginate<R extends io.AppBaseRequest>(req: R): this;
-    }
-    
-    export class BaseSchema extends Schema {
-        query: BaseDocumentMethods;
-    }
-}
-
 
 /**
  * IO Types
@@ -71,3 +39,36 @@ export namespace io {
         body: Q;
     }
 }
+
+/**
+ * Mongodb Types
+ */
+export namespace mongo {
+    export type BaseDocumentMethods = {
+        [propName: string] : (...args: any[]) => any
+    }
+    
+    export type DocumentConfig = {
+        resultsPerPage: number;
+    }
+    
+    export interface IBaseDocument {
+        name: string;
+        schema: any;
+        methods?: BaseDocumentMethods;
+        statics?: BaseDocumentMethods;
+    }
+    
+    export interface IBaseModel<T extends Document> extends Model<T> {
+        waitIndexesCreated(): Promise<any>;
+    }
+    
+    export interface IBaseDocumentQuery<DocType extends Document> extends DocumentQuery<DocType[], DocType> {
+        sortAndPaginate<R extends io.AppBaseRequest>(req: R): this;
+    }
+    
+    export class BaseSchema extends Schema {
+        query: BaseDocumentMethods;
+    }
+}
+

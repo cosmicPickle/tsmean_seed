@@ -4,19 +4,19 @@ import * as sinon from 'sinon';
 import 'mocha';  
 import { SinonStub } from 'sinon';
 
-import { mongoose } from './../configuration/db/mongo';
+import { mongoose } from './../../configuration/db/mongo';
 
-import { User } from '../core/models/resource/user/UserDocument';
-import { IUser } from '../core/models/resource/user/types';
-import { userRouteValidatorMiddleware } from './../core/middlewares/validation/request/UserRouteValidatorMiddleware';
+import { User } from '../models/resource/user/UserDocument';
+import { IUser } from '../models/resource/user/types';
+import { userRouteValidatorMiddleware } from './../middlewares/validation/request/UserRouteValidatorMiddleware';
 
-import { Group } from '../core/models/resource/group/GroupDocument';
-import { IGroup } from '../core/models/resource/group/types';
+import { Group } from '../models/resource/group/GroupDocument';
+import { IGroup } from '../models/resource/group/types';
 
-import { appUnknownUserError, appMongoError } from './../configuration/errors/errorsConfig';
+import { appUnknownUserError, appMongoError } from './../../configuration/errors/errorsConfig';
 
-import { appLoggerMiddleware } from '../core/middlewares/AppLoggerMiddleware';
-import { appAuthenticateMiddleware } from '../core/middlewares/AppAuthenticateMiddleware';
+import { appLoggerMiddleware } from '../middlewares/AppLoggerMiddleware';
+import { appAuthenticateMiddleware } from '../middlewares/AppAuthenticateMiddleware';
 
 import { Model } from 'mongoose';
 

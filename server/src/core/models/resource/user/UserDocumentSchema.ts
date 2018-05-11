@@ -1,19 +1,11 @@
 import { mongoose } from './../../../../configuration/db/mongo';
-import { userPostBodySchema } from './validation';
+import * as Joi from 'joi';
 
 export const UserDocumentSchema = {
     username: {
         type: String,
         required: true,
         unique: true,
-        validate: {
-            isAsync: true,
-            validator: function(val, cb)  {
-                const {error, value} = userPostBodySchema.username.validate(val);
-                cb(!error, JSON.stringify(error))
-            },
-            message: null
-        }
     },
     password: {
         type: String,

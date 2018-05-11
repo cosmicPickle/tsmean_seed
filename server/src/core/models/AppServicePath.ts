@@ -1,4 +1,4 @@
-export class AppServicePath { 
+export type AppServicePath = { 
     method: string 
     path: string 
 }

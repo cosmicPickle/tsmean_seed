@@ -1,18 +1,19 @@
 import { Response, Request } from "express";
 
-import { AppRoute } from "../core/routing/AppRoute";
-import { appUnknownUserError, appMongoError, appUnknownGroupError } from "../configuration/errors/errorsConfig";
+import { IAppRoute, AppRoute } from "./AppRoute";
+import { appUnknownUserError, appMongoError, appUnknownGroupError, appRouteValidationError, appGeneralError } from "./../../configuration/errors/errorsConfig";
 
-import { UserGetRequest, IUserDocumentQuery } from "../core/models/resource/user/types";
-import { User } from "../core/models/resource/user/UserDocument";
-import { Group } from "../core/models/resource/group/GroupDocument";
+import { UserGetRequest, IUserDocumentQuery, UserPostRequest } from "../models/resource/user/types";
+import { User } from "../models/resource/user/UserDocument";
+import { Group } from "../models/resource/group/GroupDocument";
+import { IGroup } from "../models/resource/group/types";
 
 
-
-export class UserRoute extends AppRoute<UserGetRequest> {
+export class UserRoute extends AppRoute {
     protected path = '/user/:name?'
 
-    async get(req: UserGetRequest, res: Response) {
+    async get(req: UserGetRequest , res: Response) {
+
         if(req.params.name) {
             try {
                 const user = await User.findOne({
@@ -54,25 +55,33 @@ export class UserRoute extends AppRoute<UserGetRequest> {
         }
     }
 
-    async post(req: Request, res: Response) {
+    async post(req: UserPostRequest, res: Response) {
+
+        let group: IGroup;
+
         try {
-            const group = await Group.findOne({
+            group = await Group.findOne({
                 name: req.body.group
             });
-
-            if(!group) 
-                return res.json(appUnknownGroupError.get())
-            req.body.group = group;
-
-            await User.create(req.body);
-
-            return res.json({
-                handshake: 'Hi, ' + req.body.username + ' welcome aboard',
-                status: 'ok'
-            })
         } catch(err) {
             return res.json(appMongoError.parse(err).get());
         }
+
+        if(!group) 
+            return res.json(appUnknownGroupError.get())
+
+        try {
+            req.body.group = group;
+            await User.create(req.body);   
+        } catch(err) {
+            return res.json(appMongoError.parse(err).get());
+            
+        }
+
+        return res.json({
+            handshake: 'Hi, ' + req.body.username + ' welcome aboard',
+            status: 'ok'
+        })
     }
 }
 

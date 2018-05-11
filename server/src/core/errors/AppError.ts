@@ -10,7 +10,7 @@ export class AppError {
             message: this.message,
             payload: this.payload
         }
-    }
+    }    
 } 
 
 export default AppError;

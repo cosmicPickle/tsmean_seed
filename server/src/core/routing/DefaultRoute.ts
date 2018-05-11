@@ -1,7 +1,7 @@
 import AppRoute from './AppRoute';
 import { io } from '../models/resource/base/types';
 
-export class DefaultRoute extends AppRoute<io.AppBaseRequest> {
+export class DefaultRoute extends AppRoute {
     protected path = '/'
 }
 

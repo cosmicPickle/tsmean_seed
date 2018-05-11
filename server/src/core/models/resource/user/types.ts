@@ -45,10 +45,17 @@ export interface UserQuery extends base.io.AppBaseQuery {
  * Request body types
  */
 export interface UserBody extends base.io.AppBaseBody {
-
+    username: string;
+    password: string;
+    age: number;
+    country: string;
+    group: string | IGroup;
+    allowedServices: AppServicePath[];
+    allowedRoutes: string[];
 }
 
 /**
  * Request types
  */
-export type UserGetRequest = base.io.AppBaseRequest<UserQuery>;
+export interface UserGetRequest extends base.io.AppBaseRequest<UserQuery> {};
+export type UserPostRequest = base.io.AppBaseRequest<base.io.AppBaseQuery, UserBody>
