@@ -4,12 +4,13 @@ export class AppRouteValidationError extends AppError {
     protected message = "invalid_request"
 
     parse(error: Joi.ValidationError): AppRouteValidationError {
-
+        this.debug(error);
+        
         this.payload = {
             errors: [],
             invalid: error._object
         }
-        console.log(error);
+
         error.details.forEach((e) => {
             (this.payload as any).errors.push({
                 path: e.path,

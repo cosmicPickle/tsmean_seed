@@ -1,6 +1,8 @@
 import { Request } from "express";
 
 export namespace SchemaHelpers {
+    export type AnySchema = boolean | string | number | Range | Lt | Gt | In;
+
     export interface Range {
         lt: number,
         gt: number
@@ -13,7 +15,7 @@ export namespace SchemaHelpers {
     }
     export interface In {
         in: string[]
-    }
+    } 
 }
 export interface AppBaseQuery {
     token?: string;

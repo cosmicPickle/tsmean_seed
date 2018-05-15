@@ -28,8 +28,7 @@ export class AppAuthenticateMiddleware {
             try {
                 allowed = await appGuard.service(req);
             } catch(err) {
-                logger.error(err);
-                return res.json(appGeneralError.get());
+                return res.json(appGeneralError.debug(err).get());
             }
 
             

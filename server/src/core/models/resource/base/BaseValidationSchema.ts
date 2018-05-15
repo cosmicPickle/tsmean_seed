@@ -4,7 +4,7 @@ import * as Joi from 'joi';
 export namespace SchemaHelpers {
     
     export const lt = {
-        lt: Joi.number().integer().min(Joi.ref('gt'))
+        lt: Joi.number().integer()
     }
 
     export const gt = {

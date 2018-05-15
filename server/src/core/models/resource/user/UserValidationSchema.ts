@@ -8,7 +8,7 @@ export class UserGetQuerySchema extends AppBaseQuerySchema {
 }
 
 export class UserPostBodySchema extends AppBaseBodySchema {
-    username = Joi.string().required().valid('cosmic22', 'cosmic33');
+    username = Joi.string().required();
     password = Joi.string().required();
     age = Joi.number().required();
     country = Joi.string().min(2).max(2).required();
