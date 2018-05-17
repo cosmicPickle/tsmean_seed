@@ -140,7 +140,7 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
      * @throws Error if this.collection is undefined
      * @throws Error if any of the relation ids provided is invalid
      * @throws Error if pre-save hook fails
-     * @throws MongoError if there was a problem with the create or relation validation
+     * @throws MongoError if there was a problem with the update or relation validation
      */
     async update<B extends AppBaseBody>(
         id: string | number | mongodb.ObjectId, 
@@ -171,7 +171,18 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
         });
     }
 
-
+    /**
+     * @function delete
+     * 
+     * Deletes a document by id or a unique field. If soft delete is enabled
+     * adds a __delete:true property on the document
+     * 
+     * @param id string | number | mongodb.ObjectId
+     * @param by keyof T @default '_id'
+     * @returns Promise<mongodb.UpdateWriteOpResult>
+     * @throws Error if this.collection is undefined
+     * @throws MongoError if there was a problem with the create or relation validation
+     */
     async delete<B extends AppBaseBody>(
         id: string | number | mongodb.ObjectId, 
         by: keyof T = '_id'
@@ -179,10 +190,6 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
 
         if(!this.collection) {
             throw new Error(`Collection is not set.`);
-        }
-
-        if(!id) {
-            throw new Error(`You are trying to update an invalid document.`);
         }
 
         let query: any = {};
