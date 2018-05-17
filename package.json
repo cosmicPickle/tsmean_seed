@@ -20,6 +20,7 @@
     "express": "^4.16.3",
     "joi": "^13.3.0",
     "jsonwebtoken": "^8.2.0",
+    "md5": "^2.2.1",
     "mongodb": "^3.0.8",
     "path-to-regexp": "^2.2.1",
     "tslint": "^5.10.0",

@@ -1,4 +1,5 @@
 import { Request } from "express";
+import { ObjectId } from "bson";
 
 export namespace SchemaHelpers {
     export type AnySchema = boolean | string | number | Range | Lt | Gt | In;
@@ -18,14 +19,11 @@ export namespace SchemaHelpers {
     } 
 }
 export interface AppBaseQuery {
-    token?: string;
     sort?: string;
     page?: number;
 }
 
-export interface AppBaseBody {
-    token?: string;
-}
+export interface AppBaseBody {}
 
 export interface AppBaseRequest<T extends AppBaseQuery = AppBaseQuery, Q extends AppBaseBody = AppBaseBody> extends Request {
     query: T;

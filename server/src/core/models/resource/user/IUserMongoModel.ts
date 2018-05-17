@@ -1,8 +1,8 @@
 import { AppServicePath } from '../../AppServicePath';
 import { IGroupMongoModel } from '../group/IGroupMongoModel';
-import { ObjectId } from 'bson';
-export interface IUserMongoModel {
-    _id: ObjectId;
+import { IBaseMongoModel } from '../base/IBaseMongoModel';
+
+export interface IUserMongoModel extends IBaseMongoModel {
     username: string;
     password: string;
     age: number;

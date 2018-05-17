@@ -22,7 +22,6 @@ export interface UserBody extends base.AppBaseBody {
     allowedServices: AppServicePath[];
     allowedRoutes: string[];
 }
-
 /**
  * Request types
  */

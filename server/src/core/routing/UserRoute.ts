@@ -4,10 +4,12 @@ import { IAppRoute, AppRoute } from "./AppRoute";
 import { appUnknownUserError, appMongoError, appUnknownGroupError, appRouteValidationError, appGeneralError } from "./../../configuration/errors/errorsConfig";
 
 import { UserGetRequest, UserPostRequest } from "../models/resource/user/UserValidationSchemaTypes";
-import { User, userMongoModel } from './../models/resource/user/UserMongoModel';
+import { User, userMongoModel, UserMongoModel } from './../models/resource/user/UserMongoModel';
 import { Group } from './../models/resource/group/GroupMongoModel';
 import { IGroupMongoModel } from "../models/resource/group/IGroupMongoModel";
-import { MongoError } from "mongodb";
+import { MongoError, ObjectId, DeleteWriteOpResultObject } from "mongodb";
+import { AppBaseRequest } from "../models/resource/base/BaseValidationSchemaTypes";
+import { IUserMongoModel } from "../models/resource/user/IUserMongoModel";
 
 export class UserRoute extends AppRoute {
     protected path = '/user/:name?'
@@ -64,26 +66,15 @@ export class UserRoute extends AppRoute {
     }
 
     async post(req: UserPostRequest, res: Response) {
-
-        let group: IGroupMongoModel;
-
         try {
-            group = await Group.findOne({
-                name: req.body.group
-            });
-        } catch(err) {
-            return res.json(appMongoError.parse(err).get());
-        }
-
-        if(!group) 
-            return res.json(appUnknownGroupError.get())
-
-        try {
-            let payload = Object.assign({}, req.body, { group: group._id });
-            await User.insert(payload);   
+            const result = await userMongoModel.create(req.body);
 
             return res.json({
-                handshake: req.body.username,
+                ops: result.ops.map((o) => {
+                    return o.username
+                }),
+                inserted: result.insertedCount,
+                ok: result.result.ok
             })
         } catch(err) {
             if(err instanceof MongoError)
@@ -91,7 +82,54 @@ export class UserRoute extends AppRoute {
             else 
                 return res.json(appGeneralError.debug(err).get());
         }
- 
+    }
+
+    async put(req: UserPostRequest, res: Response) {
+        if(!req.params.name) {
+            return res.json(appUnknownUserError.get());
+        }
+        
+        try {
+            const result = await userMongoModel.update(req.params.name, req.body, 'username');
+            
+            if(!result.matchedCount)
+                return res.json(appUnknownUserError.get());
+                
+            return res.json({
+                matched: result.matchedCount,
+                modified: result.modifiedCount,
+                ok: result.result.ok
+            })
+        } catch(err) {
+            if(err instanceof MongoError)
+                return res.json(appMongoError.parse(err).get());
+            else 
+                return res.json(appGeneralError.debug(err).get());
+        }
+    }
+
+    async delete(req: AppBaseRequest, res: Response) {
+
+        if(!req.params.name) {
+            return res.json(appUnknownUserError.get());
+        }
+
+        try {
+            const result = await userMongoModel.delete(req.params.name, "username");
+            
+            if(!result.deletedCount)
+                return res.json(appUnknownUserError.get());
+                
+            return res.json({
+                deleted: result.deletedCount,
+                ok: result.result.ok
+            })
+        } catch(err) {
+            if(err instanceof MongoError)
+                return res.json(appMongoError.parse(err).get());
+            else 
+                return res.json(appGeneralError.debug(err).get());
+        }
     }
 }
 

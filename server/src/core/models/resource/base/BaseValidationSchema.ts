@@ -58,6 +58,7 @@ export class AppBaseQuerySchema extends BaseValidationSchema {
     page: Joi.NumberSchema = Joi.number().min(0);
 }
 
-export class AppBaseBodySchema extends BaseValidationSchema {
-    
-}
+export class AppBaseBodySchema extends BaseValidationSchema { }
+
+export let appBaseQuerySchema = new AppBaseQuerySchema();
+export let appBaseBodySchema = new AppBaseBodySchema();

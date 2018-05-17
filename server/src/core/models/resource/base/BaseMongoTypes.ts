@@ -8,9 +8,10 @@ export type BaseMongoRelation = {
     isArray?: boolean
 }
 
-export type BaseMongoModelConfig = {
+export interface BaseMongoModelConfig {
     resultsPerPage?: number;
     relations?: BaseMongoRelation[];
+    checkRelationsValidity?: boolean;
     filters?: string[]
 }
 

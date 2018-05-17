@@ -1,8 +1,7 @@
 import { AppServicePath } from './../../AppServicePath';
-import { ObjectId } from 'bson';
+import { IBaseMongoModel } from '../base/IBaseMongoModel';
 
-export interface IGroupMongoModel extends Document {
-    _id: ObjectId
+export interface IGroupMongoModel extends IBaseMongoModel {
     name: string;
     allowedRoutes: string[],
     allowedServices: AppServicePath[]

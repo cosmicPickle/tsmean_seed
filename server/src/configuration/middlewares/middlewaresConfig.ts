@@ -17,6 +17,12 @@ export const middlewares: AppMiddlewares= {
         ],
         post: [
             userRouteValidatorMiddleware.post
+        ],
+        put: [
+            userRouteValidatorMiddleware.put
+        ],
+        delete: [
+            userRouteValidatorMiddleware.delete
         ]
     }
 };
