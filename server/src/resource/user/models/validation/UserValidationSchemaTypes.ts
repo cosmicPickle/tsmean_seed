@@ -1,5 +1,5 @@
- import * as base from './../base/BaseValidationSchemaTypes'
-import { AppServicePath } from '../../AppServicePath';
+ import * as base from './../../../../core/models/resource/base/BaseValidationSchemaTypes'
+import { AppServicePath } from './../../../../core/models/AppServicePath';
  
  /**
  *  Request query string types

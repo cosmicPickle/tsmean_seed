@@ -12,7 +12,7 @@ fs.readdirSync('node_modules')
 
 
 module.exports = {
-    devtool: '#source-map',
+    devtool: "cheap-module-eval-source-map",
     entry: {
         app: [
             './server/src/index.ts',

@@ -1,5 +1,6 @@
 
 import * as Joi from 'joi';
+import { logger } from '../../../lib/AppLogger';
 
 export namespace SchemaHelpers {
     
@@ -22,8 +23,8 @@ export namespace SchemaHelpers {
 }
 
 export class BaseValidationSchema {
-    validate(obj): Promise<Boolean> {
-        return new Promise<Boolean>((resolve, reject) => {
+    validate<T>(obj: T): Promise<T> {
+        return new Promise<T>((resolve, reject) => {
             let _schema = Joi.object();
             let keys: Joi.SchemaMap = {};
             
@@ -33,7 +34,7 @@ export class BaseValidationSchema {
 
 
             if(!keys) {
-                resolve(true);
+                resolve({} as T);
                 return;
             }
 
@@ -41,11 +42,11 @@ export class BaseValidationSchema {
                 _schema = (_schema as Joi.ObjectSchema).keys(keys);
 
                 const { error, value } = Joi.validate(obj, _schema);
-                
+
                 if(error)
                     throw error;
 
-                resolve(true);
+                resolve(value as T);
             } catch (e) {
                 throw e;
             }

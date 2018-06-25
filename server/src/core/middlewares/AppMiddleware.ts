@@ -1,15 +1,12 @@
 import { Request, Response, NextFunction} from "express";
 
 
-export type AppMiddlewareFunction =  (req: Request, res: Response, next: NextFunction) => void;
-export type AppMiddlewareMethod = {
+export type AppMiddlewareFunction =  (req: Request, res: Response, next?: NextFunction) => void;
+export type AppMiddleware = {
     _?: AppMiddlewareFunction[]
     get? : AppMiddlewareFunction[]
     post? : AppMiddlewareFunction[]
     put? : AppMiddlewareFunction[]
     delete? : AppMiddlewareFunction[]
-}
-export type AppMiddlewares = {
-    _? : AppMiddlewareFunction[],
-    [path: string] : AppMiddlewareMethod | AppMiddlewareFunction[]
+    [key: string] : AppMiddlewareFunction[]
 }

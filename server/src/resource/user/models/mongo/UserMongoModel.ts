@@ -1,14 +1,15 @@
-import { BaseMongoModel } from './../base/BaseMongoModel';
+import { BaseMongoModel } from './../../../../core/models/resource/base/BaseMongoModel';
+import { BaseMongoModelConfig } from './../../../../core/models/resource/base/BaseMongoTypes';
 import { IUserMongoModel } from './IUserMongoModel';
 import * as mongodb from 'mongodb';
-import { BaseMongoModelConfig } from '../base/BaseMongoTypes';
+
 import * as md5 from 'md5';
 import config from '../../../../configuration/general';
 
 export class UserMongoModel extends BaseMongoModel<IUserMongoModel> {
     name = 'users';
     resultsPerPage = 5;
-    filters = ['country'];
+    filters = ['country', 'age'];
     enableSoftDelete = false;
     relations = [{
         from: 'groups',

@@ -1,19 +1,28 @@
-import { Response, Request } from "express";
+import { Response } from "express";
+import { MongoError, DeleteWriteOpResultObject } from "mongodb";
 
-import { IAppRoute, AppRoute } from "./AppRoute";
-import { appUnknownUserError, appMongoError, appUnknownGroupError, appRouteValidationError, appGeneralError } from "./../../configuration/errors/errorsConfig";
+import { AppResource, RouteMethods } from "./../../core/routing/AppResource";
+import { AppBaseRequest } from "./../../core/models/resource/base/BaseValidationSchemaTypes";
+import { 
+    appUnknownUserError, 
+    appMongoError, 
+    appUnknownGroupError, 
+    appRouteValidationError, 
+    appGeneralError 
+} from "./../../configuration/errors/errorsConfig";
 
-import { UserGetRequest, UserPostRequest } from "../models/resource/user/UserValidationSchemaTypes";
-import { User, userMongoModel, UserMongoModel } from './../models/resource/user/UserMongoModel';
-import { Group } from './../models/resource/group/GroupMongoModel';
-import { IGroupMongoModel } from "../models/resource/group/IGroupMongoModel";
-import { MongoError, ObjectId, DeleteWriteOpResultObject } from "mongodb";
-import { AppBaseRequest } from "../models/resource/base/BaseValidationSchemaTypes";
-import { IUserMongoModel } from "../models/resource/user/IUserMongoModel";
+import { validator, middlewares } from "./middlewares";
+import { UserGetRequest, UserPostRequest } from "./models/validation";
+import { User, userMongoModel } from './models/mongo/';
+import { IGroupMongoModel } from "../group/models/mongo";
 
-export class UserRoute extends AppRoute {
-    protected path = '/user/:name?'
 
+
+export class UserResource extends AppResource {
+    protected defaultPath = '/user/:name?';
+    protected validator = validator; 
+    protected middlewares = middlewares;
+    
     async get(req: UserGetRequest , res: Response) {  
 
         if(req.params.name) {
@@ -116,7 +125,7 @@ export class UserRoute extends AppRoute {
 
         try {
             const result = await userMongoModel.delete(req.params.name, "username");
-            
+
             if(!result.deletedCount)
                 return res.json(appUnknownUserError.get());
                 
@@ -133,4 +142,4 @@ export class UserRoute extends AppRoute {
     }
 }
 
-export let userRoute = new UserRoute();
+export let userResource = new UserResource();

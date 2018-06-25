@@ -1,11 +1,10 @@
 import { Request, Response } from 'express';
-import AppRoute from './AppRoute';
+import AppResource from './../../core/routing/AppResource';
 import { appMongoError, appUnknownUserError } from './../../configuration/errors/errorsConfig';
-import { logger } from '../lib/AppLogger';
 
 
-export class GroupRoute extends AppRoute {
-    protected path = '/group/:id?'
+export class GroupResource extends AppResource {
+    protected defaultPath = '/group/:id?'
 
     async post(req: Request, res: Response) {
         res.json({placeholder: true})
@@ -28,4 +27,4 @@ export class GroupRoute extends AppRoute {
     }
 }
 
-export let groupRoute = new GroupRoute();
+export let groupResource = new GroupResource();

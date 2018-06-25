@@ -1,13 +1,14 @@
-import AppRoute from './AppRoute';
-import routesConfig from './../../configuration/routes/routesConfig';
+import AppResource from './AppResource';
+import resourceConfig from './../../configuration/routes/resourceConfig';
 
 export class AppRoutesRegistry {
 
-    private routes: AppRoute[] = routesConfig;
+    private resources: AppResource[] = resourceConfig;
 
     constructor(public router: any) {
-        this.routes.forEach((route) => {
-            route.mount(this.router);
+        this.resources.forEach((resource) => {
+            resource.init();
+            resource.mountRoutes(this.router);
         })
     }
 

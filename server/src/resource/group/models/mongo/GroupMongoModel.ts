@@ -1,4 +1,4 @@
-import { BaseMongoModel } from './../base/BaseMongoModel';
+import { BaseMongoModel } from './../../../../core/models/resource/base/BaseMongoModel';
 import { IGroupMongoModel } from './IGroupMongoModel';
 import * as mongodb from 'mongodb';
 

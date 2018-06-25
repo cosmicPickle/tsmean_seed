@@ -3,6 +3,7 @@ import * as mongodb from 'mongodb';
 import { AppBaseRequest, AppBaseQuery, AppBaseBody } from './BaseValidationSchemaTypes';
 import * as types from './BaseMongoTypes';
 import { IBaseMongoModel } from './IBaseMongoModel';
+import { logger } from '../../../lib/AppLogger';
 
 export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMongoModelConfig {
     name: string;
@@ -242,7 +243,7 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
     /**
      * @function getSort
      * 
-     * Takes a a sort query string (eg age|-age) and tries to resolve sort field and direction. 
+     * Takes a sort query string (eg age|-age) and tries to resolve sort field and direction. 
      * 
      * @param sortQuery string
      * @returns BaseMongoSort
@@ -341,7 +342,7 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
      * @returns a parsed filter
      */
     private _parseFilter(filter: any) {
-        let parsed: any;
+        let parsed: any = {};
         if(typeof filter === 'object') {
             for (const key in filter) { 
                 if (filter.hasOwnProperty(key)) {

@@ -1,4 +1,4 @@
-import { DefaultRoute } from './DefaultRoute';
+import { DefaultResource } from './DefaultResource';
 import { Response, Request, Express } from 'express';
 
 import * as sinon from 'sinon';
@@ -6,7 +6,7 @@ import 'mocha';
 import { SinonStub } from 'sinon';
 import { appInvalidRouteError } from './../../configuration/errors/errorsConfig';
 
-const dfr = new DefaultRoute();
+const dfr = new DefaultResource();
 
 describe('class DefaultRoute', () => {
 

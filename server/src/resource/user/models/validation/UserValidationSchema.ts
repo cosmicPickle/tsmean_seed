@@ -1,4 +1,4 @@
-import { AppBaseQuerySchema, SchemaHelpers, AppBaseBodySchema } from './../base/BaseValidationSchema';
+import { AppBaseQuerySchema, SchemaHelpers, AppBaseBodySchema } from './../../../../core/models/resource/base/BaseValidationSchema';
 import * as Joi from 'joi';
 
 export class UserGetQuerySchema extends AppBaseQuerySchema {

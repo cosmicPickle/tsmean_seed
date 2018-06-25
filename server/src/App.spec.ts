@@ -4,7 +4,7 @@ import 'mocha';
 import { SinonStub } from 'sinon';
 import { App } from './App';
 import { middlewares } from './configuration/middlewares/middlewaresConfig'
-import { routesConfig } from './configuration/routes/routesConfig';
+import { resourceConfig } from './configuration/routes/resourceConfig';
 
 describe('Server: App', () => {
 
@@ -21,14 +21,14 @@ describe('Server: App', () => {
     it('should mount all routes', () => {
         let app = new App();
         let stubs = [];
-        routesConfig.forEach((route, index) => {
-            stubs[index] = sinon.stub(route, 'mount');
+        resourceConfig.forEach((route, index) => {
+            stubs[index] = sinon.stub(route, 'mountRoutes');
         });
 
         app.init();
 
-        routesConfig.forEach((route, index) => {
-            (route.mount as SinonStub).restore();
+        resourceConfig.forEach((route, index) => {
+            (route.mountRoutes as SinonStub).restore();
             sinon.assert.called(stubs[index]);
         });
     })
