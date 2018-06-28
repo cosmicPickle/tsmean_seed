@@ -3,7 +3,7 @@ import * as sinon from 'sinon';
 import 'mocha';  
 import { SinonStub } from 'sinon';
 import { App } from './App';
-import { middlewares } from './configuration/middlewares/middlewaresConfig'
+import { globalMiddlewares } from './configuration/middlewares/middlewaresConfig'
 import { resourceConfig } from './configuration/routes/resourceConfig';
 
 describe('Server: App', () => {
@@ -15,7 +15,7 @@ describe('Server: App', () => {
         app.init();
         
         (app.express.use as SinonStub).restore();
-        sinon.assert.calledWith(expressUseStub as SinonStub, middlewares._);
+        sinon.assert.calledWith(expressUseStub as SinonStub, globalMiddlewares._);
     });
 
     it('should mount all routes', () => {

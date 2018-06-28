@@ -1,4 +1,4 @@
- import * as base from './../../../../core/models/resource/base/BaseValidationSchemaTypes'
+import * as base from './../../../../core/models/resource/base/BaseValidationSchemaTypes'
 import { AppServicePath } from './../../../../core/models/AppServicePath';
  
  /**

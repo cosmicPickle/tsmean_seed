@@ -3,7 +3,7 @@ import { AppMiddleware } from './../../core/middlewares/AppMiddleware';
 import { appLoggerMiddleware } from './../../core/middlewares/AppLoggerMiddleware';
 import { appAuthenticateMiddleware } from './../../core/middlewares/AppAuthenticateMiddleware';
 
-export const middlewares: AppMiddleware= {
+export const globalMiddlewares: AppMiddleware= {
     _: [
         bodyParser.urlencoded({ extended: true }),
         bodyParser.json({ strict: false}),
@@ -11,4 +11,4 @@ export const middlewares: AppMiddleware= {
     ]
 };
 
-export default middlewares;
+export default globalMiddlewares;

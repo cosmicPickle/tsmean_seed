@@ -1,6 +1,6 @@
 import * as express from 'express'
 import AppRoutesRegistry from './core/routing/AppRoutesRegistry';
-import middlewaresConfig from './configuration/middlewares/middlewaresConfig';
+import { globalMiddlewares } from './configuration/middlewares/middlewaresConfig';
 
 export class App {
     public express = express();
@@ -14,7 +14,7 @@ export class App {
     } 
 
     private mountGlobalMiddlewares() {
-        const routeMiddlewares = middlewaresConfig._;
+        const routeMiddlewares = globalMiddlewares._;
         routeMiddlewares && this.express.use(routeMiddlewares);
     }
     private mountRoutes (): void {

@@ -1,30 +1,14 @@
-import { Request, Response } from 'express';
 import AppResource from './../../core/routing/AppResource';
-import { appMongoError, appUnknownUserError } from './../../configuration/errors/errorsConfig';
+import { groupMongoModel } from './models/mongo';
+import { validator, middlewares } from './middlewares';
 
 
 export class GroupResource extends AppResource {
-    protected defaultPath = '/group/:id?'
+    protected defaultPath = '/group/:name?'
+    protected model = groupMongoModel;
 
-    async post(req: Request, res: Response) {
-        res.json({placeholder: true})
-        // try {
-        //     let group = new Group();
-        //     group.name = req.body.name;
-        //     group.allowedRoutes = req.body.allowedRoutes;
-        //     group.allowedServices = req.body.allowedServices;
-            
-        //     await group.save();
-            
-        //     return res.json({
-        //         success: 'Group Saved',
-        //         status: 'ok'
-        //     })
-        // } catch(err) {
-        //     return res.json(appMongoError.parse(err).get());
-        // }
-        
-    }
+    protected validator = validator;
+    protected middlewares = middlewares;
 }
 
 export let groupResource = new GroupResource();

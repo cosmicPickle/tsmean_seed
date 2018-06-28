@@ -1,18 +1,32 @@
-import { isArray } from "util";
+import * as mongodb from 'mongodb';
+import { IBaseMongoModel } from './IBaseMongoModel';
 
-export type BaseMongoRelation = {
-    from: string,
-    localField: string,
-    foreignField?: string;
-    as?: string,
-    isArray?: boolean
+export class BaseMongoRelation<T extends IBaseMongoModel>  {
+    public from: string
+    public projections: {
+        default: BaseMongoProjection<T>,
+        [key: string] : BaseMongoProjection<T>
+    };    
+    public foreignField?: string
+    public as?: string
+    public isArray?: boolean
+
+    constructor(init?: BaseMongoRelation<T>) {
+        Object.assign(this, init);
+    }
 }
 
-export interface BaseMongoModelConfig {
+export interface BaseMongoModelConfig<T extends IBaseMongoModel> {
     resultsPerPage?: number;
-    relations?: BaseMongoRelation[];
+    relations?: {
+        [P in keyof T]?: BaseMongoRelation<any>
+    }
     checkRelationsValidity?: boolean;
     filters?: string[]
+}
+
+export type BaseMongoProjection<T extends IBaseMongoModel> = {
+    [P in keyof T]?: boolean | string
 }
 
 export type BaseMongoSort = {
@@ -29,3 +43,7 @@ export type BaseMongoLookup = Array<{
 } | {
     $addField: any
 }>
+
+export interface InsertOneWriteOpResult<T> extends mongodb.InsertOneWriteOpResult {
+    ops: T[];
+}

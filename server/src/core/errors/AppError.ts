@@ -1,5 +1,11 @@
 import { logger } from "../lib/AppLogger";
 
+export interface IAppError {
+    code: number,
+    message: string,
+    payload: any,
+    debug: string
+}
 export class AppError {
     protected message: string
     protected payload: any

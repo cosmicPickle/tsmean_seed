@@ -10,7 +10,7 @@ import { logger } from "../lib/AppLogger";
 
 export class AppAuthenticateMiddleware {
     check: AppMiddlewareFunction  = (req, res, next)  => {
-        
+        logger.debug("Hi");
         
         var token = req.body.token || req.query.token || req.headers['x-access-token'];
 

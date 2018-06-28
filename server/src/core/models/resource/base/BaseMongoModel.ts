@@ -4,9 +4,16 @@ import { AppBaseRequest, AppBaseQuery, AppBaseBody } from './BaseValidationSchem
 import * as types from './BaseMongoTypes';
 import { IBaseMongoModel } from './IBaseMongoModel';
 import { logger } from '../../../lib/AppLogger';
+import { Q } from '../../../lib/Q';
+import { debug } from 'util';
 
-export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMongoModelConfig {
+export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMongoModelConfig<T> {
     name: string;
+    lookupField: keyof T = '_id';
+    projections: {
+        default: types.BaseMongoProjection<T>,
+        [key: string] : types.BaseMongoProjection<T>
+    };
     /**
      * @property String[]
      * 
@@ -28,7 +35,9 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
      * on reading and when checking for valid relation ids when inserting
      * or updating a document
      */
-    relations: types.BaseMongoRelation[];
+    relations: {
+        [P in keyof T]?: types.BaseMongoRelation<any>
+    }
     /**
      * @property Boolean
      * @default true
@@ -42,7 +51,7 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
      * @default false
      * 
      * If set to true, instead of deleting documents from the database, 
-     * a __delete property will be added at the document root level
+     * a __deleted property will be added at the document root level
      */
     enableSoftDelete = false;
     
@@ -84,15 +93,51 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
      * @throws Error if this.collection is undefined
      * @throws MongoError if there was a problem with the read
      */
-    read<R extends AppBaseRequest>(req: R): Promise<T[]> {
+    read<R extends AppBaseRequest>(
+        req: R, 
+        projection: string = 'default', 
+        relationProjections?: {[P in keyof T] : string}
+    ): Promise<T[]> {
         if(!this.collection) {
             throw new Error(`Collection is not set.`);
         }
 
-        if(this.relations && this.relations.length) 
-            return this._readAggregation(req);
+        if(this.relations && Object.keys(this.relations).length) 
+            return this._readAggregation(req, projection, relationProjections);
 
-        return this._readSimple(req);
+        return this._readSimple(req, projection);
+    }
+
+    /**
+     * @function readOne
+     * 
+     * Reads a single entry from a collection based on an id. The default search field is id_. If a second parameter
+     * is provided it will find by that field as well
+     * 
+     * @param id the id to find
+     * @param by the field in which the id is searched
+     * @returns Promise<T>
+     * @throws Error if this.collection is undefined
+     * @throws MongoError if there was a problem with the read
+     */
+    readOne(
+        id: string | number | mongodb.ObjectId, 
+        by: keyof T = this.lookupField, 
+        projection: string = 'default', 
+        relationProjections?: {[P in keyof T] : string}
+    ): Promise<T> {
+        if(!by) {
+            by = this.lookupField
+        }
+
+        if(!this.collection) {
+            throw new Error(`Collection is not set.`);
+        }
+
+        if(this.relations && Object.keys(this.relations).length) 
+            return this._readOneAggregation(id, by, projection, relationProjections);
+
+        return this._readOneSimple(id, by, projection);
     }
 
     /**
@@ -108,7 +153,7 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
      * @throws Error if pre-save hook fails
      * @throws MongoError if there was a problem with the create or relation validation
      */
-    async create<B extends AppBaseBody>(entity: B): Promise<mongodb.InsertOneWriteOpResult> {
+    async create<B extends AppBaseBody>(entity: B): Promise<types.InsertOneWriteOpResult<T>> {
         if(!this.collection) {
             throw new Error(`Collection is not set.`);
         }
@@ -146,20 +191,23 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
     async update<B extends AppBaseBody>(
         id: string | number | mongodb.ObjectId, 
         entity: B,
-        by: keyof T = '_id'): Promise<mongodb.UpdateWriteOpResult>{
+        by: keyof T = this.lookupField): Promise<mongodb.UpdateWriteOpResult>{
 
         if(!this.collection) {
             throw new Error(`Collection is not set.`);
         }
-        
+
         if(this.relations && this.checkRelationsValidity) {     
             const validated = await this._validateRelations(entity);
 
             if(validated === false)
-                throw new Error(`Invalid relation.`)
+                throw new Error(`Invalid relation.`);
 
             entity = Object.assign({}, entity, validated);
         }
+
+        if(Object.keys(entity).length == 0)
+            throw new Error(`Empty update.`);
 
         if((this as any).onPreSave)
             if((this as any).onPreSave(entity) === false)
@@ -167,6 +215,17 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
 
         let query: any = {};
         query[by] = id;
+
+        //Let's not forget to add the soft delete
+        if(this.enableSoftDelete)
+            query.$or = [{
+                __deleted: false
+            }, {
+                __deleted: {
+                    $exists: false
+                }
+            }]
+
         return this.collection.updateOne(query, {
             $set: entity
         });
@@ -176,7 +235,7 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
      * @function delete
      * 
      * Deletes a document by id or a unique field. If soft delete is enabled
-     * adds a __delete:true property on the document
+     * adds a __deleted:true property on the document
      * 
      * @param id string | number | mongodb.ObjectId
      * @param by keyof T @default '_id'
@@ -186,7 +245,7 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
      */
     async delete<B extends AppBaseBody>(
         id: string | number | mongodb.ObjectId, 
-        by: keyof T = '_id'
+        by: keyof T = this.lookupField
     ): Promise<mongodb.DeleteWriteOpResultObject> {
 
         if(!this.collection) {
@@ -213,6 +272,29 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
         return this.collection.deleteOne(query)
     }
 
+    async restore(
+        id: string | number | mongodb.ObjectId, 
+        by: keyof T = this.lookupField
+    ): Promise<mongodb.UpdateWriteOpResult>{
+        if(!this.enableSoftDelete) {
+            throw new Error('This model does not support soft delete.');
+        }
+        if(!this.collection) {
+            throw new Error(`Collection is not set.`);
+        }
+
+        let query: any = {
+            __deleted: true
+        }
+        query[by] = id;
+
+        return this.collection.updateOne(query, {
+            $set: {
+                __deleted: false
+            }
+        });
+    }
+
     /**
      * @function getFind
      * 
@@ -236,6 +318,16 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
             //The parser function tries to parse in operators like $gt, $lt etc.
             find[f] = this._parseFilter(input[f]);
         });
+
+        //Let's not forget to add the soft delete
+        if(this.enableSoftDelete)
+            find.$or = [{
+                __deleted: false
+            }, {
+                __deleted: {
+                    $exists: false
+                }
+            }]
 
         return Object.keys(find).length ? find : null;
     }
@@ -294,18 +386,18 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
         if(!this.relations)
             return lookupArr;
 
-        this.relations.forEach((rel) => {
-
+        Object.keys(this.relations).forEach((key) => {
+            let rel: types.BaseMongoRelation<any> = this.relations[key];
             //If we don't have an 'as' field specified in the relation
             //we are just gonna use the localField
-            const _as = rel.as ? rel.as : rel.localField;
+            const _as = rel.as ? rel.as : key;
             //Most often the foreign field will be the document _id
             const foreignField = rel.foreignField ? rel.foreignField : '_id';
 
             let lookup = {
                 $lookup: {
                     from: rel.from,
-                    localField: rel.localField,
+                    localField: key,
                     foreignField: foreignField,
                     as: _as
                 }
@@ -329,6 +421,96 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
         });
 
         return lookupArr;
+    }
+
+    getProjection(
+        projection: string = 'default', 
+        relationProjections?: {[P in keyof T] : string}
+    ) : any[] {
+        
+        let $project = this.projections[projection];
+        
+        if(!$project) 
+            return [];
+
+
+        let projectionArr = [];
+        projectionArr.push({$project : $project});
+
+        for(let key in this.relations) {
+            if(!$project[key] || !this.relations.hasOwnProperty(key))
+                continue;
+            
+            const rel: types.BaseMongoRelation<any> = this.relations[key];
+            const _as = rel.as ? rel.as : key;
+
+            const $relProj = relationProjections && relationProjections[key]
+                                ? rel.projections[relationProjections[key]] 
+                                : rel.projections[projection];
+
+            let $finalProj: types.BaseMongoProjection<T> = {};
+
+            if(!$relProj) {
+                $finalProj[key] = false;
+                logger.warn(`No '${relationProjections && relationProjections[key] ? relationProjections[key] : projection}' projection ` 
+                            + `is provided for relation '${key}' of model '${this.constructor.name}'`);
+                projectionArr.push({ $project: $finalProj});
+                continue;
+            }
+
+            if(!rel.isArray) {
+                
+                let $finalProj: any = $project;
+                $finalProj[_as] = Object.assign($relProj);
+
+                projectionArr.push({ $project: $finalProj });
+            } else {
+                let $currentProject: types.BaseMongoProjection<T> = JSON.parse(JSON.stringify($project));
+                
+                let $push: any = {}; 
+                let $groupIds: any = {};
+
+                delete $currentProject[key];
+
+                projectionArr.push({ $unwind: `\$${_as}` });
+
+                for(let relProjKey in $relProj) {
+                    if(!relProjKey || !$relProj.hasOwnProperty(relProjKey))
+                        continue;
+
+                    $currentProject[`${_as}.${relProjKey}`] = `\$${_as}.${relProjKey}`;
+                    $push[relProjKey] = `\$${_as}.${relProjKey}`
+                }
+                
+                projectionArr.push({ $project: $currentProject });
+
+                for(let pjKey in $project) {
+                    if(pjKey == key && !$project.hasOwnProperty(pjKey))
+                        continue;
+
+                    if(pjKey != key)  
+                    {
+                        $groupIds[pjKey] = `\$${pjKey}`;
+                        $finalProj[pjKey] = `\$_id.${pjKey}`;
+                    }  
+                }
+                let $group =  {
+                    _id : $groupIds
+                }
+                $group[_as] = {
+                    $push: $push
+                }
+                projectionArr.push({ $group: $group });
+
+
+                $finalProj[key] = true;
+                $finalProj._id = false;
+                projectionArr.push({ $project: $finalProj });
+            }
+        }
+
+        console.log(projectionArr);
+        return projectionArr;
     }
     
     /**
@@ -365,13 +547,24 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
      * @param req R extends AppBaseRequest
      * @returns Promise<T[]>
      */
-    private _readSimple<R extends AppBaseRequest>(req: R): Promise<T[]> {
+    private _readSimple<R extends AppBaseRequest>(
+        req: R, 
+        projection: string = 'default'
+    ): Promise<T[]> {
 
         const find = this.getFind(req.query);
         const sort = this.getSort(req.query.sort);
         const { skip, limit } = this.getPagination(req.query.page);
-
+        const $project = this.projections[projection] || {};
+        
         let cursor = this.collection.find(find ? find: null);
+        
+        if(Object.keys($project).length > 0)
+            cursor.project($project);
+        else {
+            logger.warn(`No '${projection}' projection is defined on model: ${this.constructor.name}`);
+            return new Q().defer().resolve([]);
+        }
         
         if(sort !== null)
             cursor = cursor.sort(sort);
@@ -386,6 +579,42 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
     }
 
     /**
+     * @function _readOneSimple
+     * 
+     * Performs a simple readOne operation on a model.
+     * 
+     * @param id the id whis is searched
+     * @param by the field in which the id is searched (default _id)
+     */
+    private _readOneSimple(
+        id: string | number | mongodb.ObjectId, 
+        by: keyof T = this.lookupField,
+        projection: string = 'default'
+    ): Promise<T> {
+
+        let find: any = {};
+        find[by] = id;
+
+        //Let's not forget to add the soft delete
+        if(this.enableSoftDelete)
+            find.$or = [{
+                __deleted: false
+            }, {
+                __deleted: {
+                    $exists: false
+                }
+            }]
+
+        const $project = this.projections[projection];
+
+        let cursor = this.collection.find(find);
+        if($project){
+            cursor.project($project);
+        }
+        return cursor.next();
+    }
+
+    /**
      * @method _readAggregation
      * 
      * Performs an aggregation operation on the model, which filters, sorts and
@@ -395,12 +624,22 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
      * @param req R extends AppBaseRequest
      * @returns Promise<T[]>
      */
-    private _readAggregation<R extends AppBaseRequest>(req: R): Promise<T[]> {
+    private _readAggregation<R extends AppBaseRequest>(
+        req: R, 
+        projection: string = 'default', 
+        relationProjections?: {[P in keyof T] : string}
+    ): Promise<T[]> {
+
         const find = this.getFind(req.query);
         const sort = this.getSort(req.query.sort);
         const { skip, limit } = this.getPagination(req.query.page);
         const lookup = this.getLookup();
-
+        const $projection = this.getProjection(projection, relationProjections);
+        
+        if(!$projection.length) {
+            logger.warn(`No '${projection}' projection is defined on model: ${this.constructor.name}`);
+            return new Q().defer().resolve([]);
+        }
         let pipeline = [];
 
         if(find) {
@@ -432,8 +671,51 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
             pipeline.push(...lookup);
         }
 
+        if($projection) {
+            pipeline.push(...$projection);
+        }
+
         let col = this.collection.aggregate(pipeline).toArray();
         return col;
+    }
+
+    /**
+     * @function _readOneAggregation
+     * 
+     * Reads one entry with a specified id and aggregates all its 
+     * one-to-one and one-to-many relations
+     * 
+     * @param id the id whis is searched
+     * @param by the field in which the id is searched (default _id)
+     */
+    private _readOneAggregation(
+        id: string | number | mongodb.ObjectId, 
+        by: keyof T = this.lookupField, 
+        projection: string = 'default', 
+        relationProjections?: {[P in keyof T] : string}
+    ): Promise<T> {
+        let find: any = {};
+        find[by] = id;
+
+        //Let's not forget to add the soft delete
+        if(this.enableSoftDelete)
+            find.$or = [{
+                __deleted: false
+            }, {
+                __deleted: {
+                    $exists: false
+                }
+            }]
+
+        let $project = this.getProjection(projection, relationProjections);
+
+        if(!$project.length) {
+            logger.warn(`No '${projection}' projection is defined on model: ${this.constructor.name}`);
+            return new Q().defer().resolve({});
+        }
+        return this.collection.aggregate([{
+                $match: find
+            }, ...this.getLookup(), ...$project]).next();
     }
 
     /**
@@ -456,19 +738,19 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
         for(const key in this.relations) {
             const rel = this.relations[key];
 
-            //If the entity[rel.localField] is empty and the middleware hasn't given an error
+            //If the entity[key] is empty and the middleware hasn't given an error
             //this field is probably not required. We will leave to the database to decide
-            if(Object.keys(rel).length && entity[rel.localField]) {
+            if(Object.keys(rel).length && entity[key as string]) {
                 
                 //If no foreignField is specified for the relation we assume _id
                 const foreignField = rel.foreignField ? rel.foreignField : '_id';
                 if(rel.isArray) {
-                    //We have a one-to-many relation. If entity[rel.localField] is not
+                    //We have a one-to-many relation. If entity[key] is not
                     //an array, we will say it is invalid
-                    if(entity[rel.localField] !instanceof Array)
+                    if(entity[key as string] !instanceof Array)
                         return false;
                     
-                    const rels = (entity[rel.localField] as Array<string>).map((r) => {
+                    const rels = (entity[key as string] as Array<string>).map((r) => {
                         return new mongodb.ObjectId(r);
                     });
 
@@ -479,10 +761,10 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
                     if(check.length < rels.length)
                         return false;
 
-                    validated[rel.localField] = rels;
+                    validated[key as string] = rels;
             
                 } else {
-                    const objId = new mongodb.ObjectId(entity[rel.localField]);
+                    const objId = new mongodb.ObjectId(entity[key as string]);
                     let find: any = {};
                     find[foreignField] = objId;
 
@@ -492,7 +774,7 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
                         return false;
                     }
 
-                    validated[rel.localField] = objId;
+                    validated[key as string] = objId;
                 }         
             } 
         }
