@@ -9,7 +9,26 @@ import { debug } from 'util';
 
 export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMongoModelConfig<T> {
     name: string;
+    /**
+     * @property keyof T
+     * 
+     * The lookup field will be used as a default document location field in each CRUD operation.
+     * 
+     * @default '_id'
+     */
     lookupField: keyof T = '_id';
+    /**
+     * @property Object properties of type types.BaseMongoProjection<T>
+     * 
+     * These profiles are used as $presets to generate $project operators
+     * for aggregate and find.
+     * 
+     * The 'default' profile is required and is used when reading many entries
+     * The 'extended' profile is used when reading a single entry
+     * 
+     * More profiles can be defined if other projections are desired. See docs
+     * for read and readOne.
+     */
     projections: {
         default: types.BaseMongoProjection<T>,
         [key: string] : types.BaseMongoProjection<T>
@@ -89,6 +108,10 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
      * Filters, paginates and sorts a collection based on a request and the model configuration
      * 
      * @param req R extends AppBaseRequest
+     * @param string = 'default' shows which projection profile should be used for projection
+     * @param {[P in keyof T] : string} Optional. If the model has any relations, 
+     * specifies which projection profile should be used for each relation respectively.
+     * If not set the profile of the main model is taken.
      * @returns Promise<T[]>
      * @throws Error if this.collection is undefined
      * @throws MongoError if there was a problem with the read
@@ -116,6 +139,10 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
      * 
      * @param id the id to find
      * @param by the field in which the id is searched
+     * @param string = 'default' shows which projection profile should be used for projection
+     * @param {[P in keyof T] : string} Optional. If the model has any relations, 
+     * specifies which projection profile should be used for each relation respectively.
+     * If not set the profile of the main model is taken.
      * @returns Promise<T>
      * @throws Error if this.collection is undefined
      * @throws MongoError if there was a problem with the read
@@ -184,6 +211,7 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
      * @param by keyof T @default '_id'
      * @returns Promise<mongodb.UpdateWriteOpResult>
      * @throws Error if this.collection is undefined
+     * @throws Error if the entity is empty
      * @throws Error if any of the relation ids provided is invalid
      * @throws Error if pre-save hook fails
      * @throws MongoError if there was a problem with the update or relation validation
@@ -238,7 +266,7 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
      * adds a __deleted:true property on the document
      * 
      * @param id string | number | mongodb.ObjectId
-     * @param by keyof T @default '_id'
+     * @param by keyof T @default this.lookupField
      * @returns Promise<mongodb.UpdateWriteOpResult>
      * @throws Error if this.collection is undefined
      * @throws MongoError if there was a problem with the create or relation validation
@@ -271,7 +299,17 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
         
         return this.collection.deleteOne(query)
     }
-
+    
+    /**
+     * @function restore
+     * 
+     * If the model has enableSofDelete set to true tries to restore a deleted entry
+     * 
+     * @param id string | number | mongodb.ObjectId
+     * @param by keyof T @default this.lookupField
+     * @throws Error if enableSoftDelete is false
+     * @throws Error if this.collection is undefined
+     */
     async restore(
         id: string | number | mongodb.ObjectId, 
         by: keyof T = this.lookupField
@@ -423,6 +461,17 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
         return lookupArr;
     }
 
+    /**
+     * @function getProjection
+     * 
+     * Returns an array which can be used in an aggregation query to produce documents with only the desired
+     * fields of the model AND all its relations. The selected fields are determined by the projection profiles
+     * selected with the two parameters.
+     * 
+     * @param projection string = 'default' shows which projection profile should be used for projection
+     * @param relationProjections {[P in keyof T] : string} Optional. If the model has any relations, 
+     * specifies which projection profile should be used for each relation respectively.
+     */
     getProjection(
         projection: string = 'default', 
         relationProjections?: {[P in keyof T] : string}
