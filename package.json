@@ -11,12 +11,14 @@
     "watch:server": "webpack --watch --mode=development --config server/webpack.config.js",
     "start": "concurrently \"npm run server:dev\" \"npm run watch:server\" ",
     "server:dev": "webpack --mode=development --config server/webpack.config.js && nodemon server/dist/index.js",
-    "prod": "webpack --mode=production && nodemon dist/index.js"
+    "prod": "webpack --mode=production && nodemon dist/index.js",
+    "server:resource": "ts-node tools/resource.ts 1"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.18.2",
+    "command-line-args": "^5.0.2",
     "express": "^4.16.3",
     "joi": "^13.3.0",
     "jsonwebtoken": "^8.2.0",
@@ -41,6 +43,7 @@
     "mocha": "^5.1.1",
     "nodemon": "^1.17.4",
     "nyc": "^11.7.3",
+    "pluralize": "^7.0.0",
     "sinon": "^4.4.8",
     "ts-loader": "^4.3.0",
     "ts-node": "^5.0.1",

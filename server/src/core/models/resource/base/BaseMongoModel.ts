@@ -477,30 +477,41 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
         relationProjections?: {[P in keyof T] : string}
     ) : any[] {
         
+        //The selected projection profile
         let $project = this.projections[projection];
         
         if(!$project) 
             return [];
 
 
+        //We will store the response here
         let projectionArr = [];
+        //We push the projection of the model
         projectionArr.push({$project : $project});
 
         for(let key in this.relations) {
-            if(!$project[key] || !this.relations.hasOwnProperty(key))
-                continue;
-            
+            //The current relation and the key by which the related data will be stored in the final
+            //document. NOTE: If the relation "as" field is provided the projection profile needs to 
+            //include that field in order for the relation data to show
             const rel: types.BaseMongoRelation<any> = this.relations[key];
             const _as = rel.as ? rel.as : key;
 
+            //If we aren't projecting the field of the relation there is nothing to do here
+            if(!$project[_as] || !this.relations.hasOwnProperty(key))
+                continue;
+            
+            //The projection profile of the relation
             const $relProj = relationProjections && relationProjections[key]
                                 ? rel.projections[relationProjections[key]] 
                                 : rel.projections[projection];
 
+            //The final projection that is going to be pushed in the projectionArr
             let $finalProj: types.BaseMongoProjection<T> = {};
 
             if(!$relProj) {
-                $finalProj[key] = false;
+                //If the relation projection profile is undefined, we will disallow the projection of the 
+                //current projection field and log a warning
+                $finalProj[_as] = false;
                 logger.warn(`No '${relationProjections && relationProjections[key] ? relationProjections[key] : projection}' projection ` 
                             + `is provided for relation '${key}' of model '${this.constructor.name}'`);
                 projectionArr.push({ $project: $finalProj});
@@ -508,18 +519,40 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
             }
 
             if(!rel.isArray) {
-                
-                let $finalProj: any = $project;
+                //This is a one-to-one relationship. We just need to select which fields of the relation to 
+                //project 
+                $finalProj = $project;
                 $finalProj[_as] = Object.assign($relProj);
-
-                projectionArr.push({ $project: $finalProj });
-            } else {
-                let $currentProject: types.BaseMongoProjection<T> = JSON.parse(JSON.stringify($project));
                 
-                let $push: any = {}; 
-                let $groupIds: any = {};
+                if($finalProj[_as]._id === false) {
+                    //We need to specifically handle the case when the _id projection is set to false
+                    //because mongo gets touchy about disabling _id in a child document
+                    delete $finalProj[_as]._id;
+                    projectionArr.push({ $project: $finalProj });
+                    projectionArr.push({ $project: { _id: false } });
+                } else {
+                    projectionArr.push({ $project: $finalProj });
+                }       
+            } else {
+                /**
+                 * In case of one-to-many rel we must do the following operations:
+                 * - $unwind the array of related documents
+                 * - $project the appropriate fields of the new documents, flattening the object
+                 * - $group by the original top level properties
+                 * - $project the appropriate end projection to get rid of the 
+                 * _id created by $group
+                 */
+                //We create a deep copy of $project to modify
+                let $currentProject: types.BaseMongoProjection<T> = JSON.parse(JSON.stringify($project));
+                //_as is the key where the relation will be projected. We don't need it in this projection,
+                //as it will be substituted with key.relProjectKey pairs
+                delete $currentProject[_as];
 
-                delete $currentProject[key];
+                //Used as aggregator operator in the $group stage
+                let $push: any = {}; 
+                //Used as _id in the group stage
+                let $groupIds: any = {};
+                
 
                 projectionArr.push({ $unwind: `\$${_as}` });
 
@@ -527,19 +560,25 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
                     if(!relProjKey || !$relProj.hasOwnProperty(relProjKey))
                         continue;
 
+                    //Preparing the fields to bring the object to top level
                     $currentProject[`${_as}.${relProjKey}`] = `\$${_as}.${relProjKey}`;
+                    //We can also prepare the fields we are going to push into the $group stage later
                     $push[relProjKey] = `\$${_as}.${relProjKey}`
                 }
-                
+
+                //Flattening the object
                 projectionArr.push({ $project: $currentProject });
 
                 for(let pjKey in $project) {
-                    if(pjKey == key && !$project.hasOwnProperty(pjKey))
+                    if(pjKey == _as && !$project.hasOwnProperty(pjKey))
                         continue;
-
-                    if(pjKey != key)  
+                    //We need to get all $project keys except the one of the child document
+                    if(pjKey != _as)  
                     {
+                        //We generate those into groupIds by which we are gonna group the documents
                         $groupIds[pjKey] = `\$${pjKey}`;
+                        //We also generate the final projection which will take the original fields
+                        //out of the _id field generated by the $group stage
                         $finalProj[pjKey] = `\$_id.${pjKey}`;
                     }  
                 }
@@ -557,8 +596,6 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
                 projectionArr.push({ $project: $finalProj });
             }
         }
-
-        console.log(projectionArr);
         return projectionArr;
     }
     
@@ -594,6 +631,7 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
      * pagination of the data
      * 
      * @param req R extends AppBaseRequest
+     * @param projection string = 'default' shows which projection profile should be used for projection
      * @returns Promise<T[]>
      */
     private _readSimple<R extends AppBaseRequest>(
@@ -634,6 +672,7 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
      * 
      * @param id the id whis is searched
      * @param by the field in which the id is searched (default _id)
+     * @param projection string = 'default' shows which projection profile should be used for projection
      */
     private _readOneSimple(
         id: string | number | mongodb.ObjectId, 
@@ -671,6 +710,9 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
      * and many-to-many relations that are configured via a $lookup
      * 
      * @param req R extends AppBaseRequest
+     * @param projection string = 'default' shows which projection profile should be used for projection
+     * @param relationProjections {[P in keyof T] : string} Optional. If the model has any relations, 
+     * specifies which projection profile should be used for each relation respectively.
      * @returns Promise<T[]>
      */
     private _readAggregation<R extends AppBaseRequest>(
@@ -736,6 +778,9 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
      * 
      * @param id the id whis is searched
      * @param by the field in which the id is searched (default _id)
+     * @param projection string = 'default' shows which projection profile should be used for projection
+     * @param relationProjections {[P in keyof T] : string} Optional. If the model has any relations, 
+     * specifies which projection profile should be used for each relation respectively.
      */
     private _readOneAggregation(
         id: string | number | mongodb.ObjectId, 

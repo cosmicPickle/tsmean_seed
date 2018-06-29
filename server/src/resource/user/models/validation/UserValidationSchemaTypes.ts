@@ -5,7 +5,7 @@ import { AppServicePath } from './../../../../core/models/AppServicePath';
  *  Request query string types
  */
 export interface UserQuery extends base.AppBaseQuery {
-    sort: '+age'|'-age'
+    sort: 'age'|'-age'
     country: string,
     age: base.SchemaHelpers.Range
 }

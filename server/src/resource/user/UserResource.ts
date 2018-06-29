@@ -1,9 +1,9 @@
 import { Response } from "express";
-import { MongoError, DeleteWriteOpResultObject } from "mongodb";
+import { MongoError } from "mongodb";
 
 import { AppResource } from "./../../core/routing/AppResource";
 import { validator, middlewares } from "./middlewares";
-import { User, userMongoModel } from './models/mongo/';
+import { userMongoModel } from './models/mongo/';
 
 export class UserResource extends AppResource {
     protected defaultPath = '/user/:username?';

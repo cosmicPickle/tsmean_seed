@@ -1,7 +1,6 @@
 import { BaseMongoModel } from './../../../../core/models/resource/base/BaseMongoModel';
 import { BaseMongoModelConfig, BaseMongoRelation } from './../../../../core/models/resource/base/BaseMongoTypes';
 import { IUserMongoModel } from './IUserMongoModel';
-import * as mongodb from 'mongodb';
 
 import * as md5 from 'md5';
 import config from '../../../../configuration/general';
@@ -17,6 +16,7 @@ export class UserMongoModel extends BaseMongoModel<IUserMongoModel> {
             group: true,
         },
         extended: {
+            _id: false,
             username: true,
             group: true,
             country: true,
@@ -34,6 +34,7 @@ export class UserMongoModel extends BaseMongoModel<IUserMongoModel> {
             projections: {
                 default: { name: true },
                 extended: { 
+                    _id: false,
                     name: true,
                     allowedRoutes: true,
                     allowedServices: true
