@@ -135,6 +135,8 @@ export class AppResource<
             let executionChain: AppMiddlewareFunction[] = [];
             if(this.validator && this.validator[key])
                 executionChain.push(...this.validator[key]);
+            if(this.middlewares && this.middlewares._)
+                executionChain.push(...this.middlewares._);
             if(this.middlewares && this.middlewares[key])
                 executionChain.push(...this.middlewares[key]);
 
