@@ -157,6 +157,8 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
             by = this.lookupField
         }
 
+        id = this._parseObjectId(id);
+
         if(!this.collection) {
             throw new Error(`Collection is not set.`);
         }
@@ -220,10 +222,12 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
         id: string | number | mongodb.ObjectId, 
         entity: B,
         by: keyof T = this.lookupField): Promise<mongodb.UpdateWriteOpResult>{
-
+        
         if(!this.collection) {
             throw new Error(`Collection is not set.`);
         }
+
+        id = this._parseObjectId(id);
 
         if(this.relations && this.checkRelationsValidity) {     
             const validated = await this._validateRelations(entity);
@@ -233,7 +237,7 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
 
             entity = Object.assign({}, entity, validated);
         }
-
+  
         if(Object.keys(entity).length == 0)
             throw new Error(`Empty update.`);
 
@@ -242,6 +246,7 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
                 throw new Error(`Pre-save operation failed`);
 
         let query: any = {};
+
         query[by] = id;
 
         //Let's not forget to add the soft delete
@@ -280,6 +285,8 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
             throw new Error(`Collection is not set.`);
         }
 
+        id = this._parseObjectId(id);
+
         let query: any = {};
         query[by] = id;
 
@@ -309,6 +316,7 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
      * @param by keyof T @default this.lookupField
      * @throws Error if enableSoftDelete is false
      * @throws Error if this.collection is undefined
+     * @returns Promise<mongodb.UpdateWriteOpResult>
      */
     async restore(
         id: string | number | mongodb.ObjectId, 
@@ -320,6 +328,8 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
         if(!this.collection) {
             throw new Error(`Collection is not set.`);
         }
+
+        id = this._parseObjectId(id);
 
         let query: any = {
             __deleted: true
@@ -597,6 +607,16 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
             }
         }
         return projectionArr;
+    }
+
+    private _parseObjectId(id: string | number | mongodb.ObjectId ) : string | number | mongodb.ObjectId {
+
+        if(!mongodb.ObjectID.isValid(id)) {
+            return id;
+        }
+
+        let testObjectId: mongodb.ObjectId = new mongodb.ObjectID(id);
+        return testObjectId == id ? testObjectId : id;
     }
     
     /**

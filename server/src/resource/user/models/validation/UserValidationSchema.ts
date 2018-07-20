@@ -8,7 +8,7 @@ export class UserGetQuerySchema extends AppBaseQuerySchema {
 }
 
 export class UserPutBodySchema extends AppBaseBodySchema {
-    username = Joi.string().required();
+    username = Joi.string().forbidden();
     password = Joi.string();
     age = Joi.number();
     country = Joi.string().min(2).max(2);
@@ -23,7 +23,7 @@ export class UserPostBodySchema extends UserPutBodySchema {
 
     constructor() {
         super();
-        this.username = this.username.forbidden();
+        this.username = this.username.required();
         this.password = this.password.required();
         this.age = this.age.required();
         this.country = this.country.required();

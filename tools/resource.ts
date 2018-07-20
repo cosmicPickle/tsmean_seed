@@ -129,7 +129,7 @@ export class Resource {
     }
 
     protected nameToPath() {
-        return `/${this.name}/:id?`
+        return `/${this.name}/:_id?`
     }
 
     protected namePlural() {

@@ -158,13 +158,13 @@ export class {{namePascalCase}}GetQuerySchema extends AppBaseQuerySchema {
 }
 
 export class {{namePascalCase}}PutBodySchema extends AppBaseBodySchema {
-    name = Joi.string().required();
+    name = Joi.string();
 }
 export class {{namePascalCase}}PostBodySchema extends {{namePascalCase}}PutBodySchema {
 
     constructor() {
         super();
-        this.name = Joi.string();
+        this.name = this.name.required();
     }
     
 }

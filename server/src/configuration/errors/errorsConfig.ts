@@ -6,7 +6,9 @@ import { AppMongoError } from './../../core/errors/AppMongoError';
 import { AppUnknownUserError } from './../../core/errors/AppUnknownUserError';
 import { AppUnknownGroupError } from './../../core/errors/AppUnknownGroupError';
 import { AppUnknownEntityError } from '../../core/errors/AppUnknownEntityError';
+import { AppNotFound } from '../../core/errors/AppNotFound';
 
+export let appNotFoundError = new AppNotFound(404);
 export let appGeneralError = new AppGeneralError(1000);
 export let appInvalidRouteError = new AppInvalidRouteError(1001);
 export let appAuthorizationError = new AppAuthorizationError(1002);
