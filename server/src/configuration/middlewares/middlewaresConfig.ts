@@ -7,7 +7,7 @@ export const globalMiddlewares: AppMiddleware= {
     _: [
         bodyParser.urlencoded({ extended: true }),
         bodyParser.json({ strict: false}),
-        appLoggerMiddleware.log
+        appLoggerMiddleware.log,
     ]
 };
 

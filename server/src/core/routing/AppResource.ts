@@ -104,7 +104,7 @@ export class AppResource<
     protected additionalRoutes: {[key: string] : AppRouteConfig} = {};
 
     init() { 
-        if(this.defaultPath.length > 0) {
+        if(this.defaultPath && this.defaultPath.length > 0) {
             for(let method in RouteMethods) {
 
                 if(isNaN(Number(method))) {

@@ -11,6 +11,7 @@ export class App {
         this.mountGlobalMiddlewares();
         this.mountRoutes();
 
+        //Add a 404
         this.express.use('*', (req, res) => {
             res.status(404).json(appNotFoundError.get())
         })

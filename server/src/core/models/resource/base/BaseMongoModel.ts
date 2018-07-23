@@ -119,7 +119,7 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
     read<R extends AppBaseRequest>(
         req: R, 
         projection: string = 'default', 
-        relationProjections?: {[P in keyof T] : string}
+        relationProjections?: {[P in keyof T]? : string}
     ): Promise<T[]> {
         if(!this.collection) {
             throw new Error(`Collection is not set.`);
@@ -151,7 +151,7 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
         id: string | number | mongodb.ObjectId, 
         by: keyof T = this.lookupField, 
         projection: string = 'default', 
-        relationProjections?: {[P in keyof T] : string}
+        relationProjections?: {[P in keyof T]? : string}
     ): Promise<T> {
         if(!by) {
             by = this.lookupField
@@ -484,7 +484,7 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
      */
     getProjection(
         projection: string = 'default', 
-        relationProjections?: {[P in keyof T] : string}
+        relationProjections?: {[P in keyof T]? : string}
     ) : any[] {
         
         //The selected projection profile
@@ -539,7 +539,11 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
                     //because mongo gets touchy about disabling _id in a child document
                     delete $finalProj[_as]._id;
                     projectionArr.push({ $project: $finalProj });
-                    projectionArr.push({ $project: { _id: false } });
+
+                    let $tmp: types.BaseMongoProjection<T> = {};
+                    $tmp[_as] = { _id: false };
+
+                    projectionArr.push({ $project: $tmp });
                 } else {
                     projectionArr.push({ $project: $finalProj });
                 }       
@@ -738,7 +742,7 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
     private _readAggregation<R extends AppBaseRequest>(
         req: R, 
         projection: string = 'default', 
-        relationProjections?: {[P in keyof T] : string}
+        relationProjections?: {[P in keyof T]? : string}
     ): Promise<T[]> {
 
         const find = this.getFind(req.query);
@@ -806,7 +810,7 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
         id: string | number | mongodb.ObjectId, 
         by: keyof T = this.lookupField, 
         projection: string = 'default', 
-        relationProjections?: {[P in keyof T] : string}
+        relationProjections?: {[P in keyof T]? : string}
     ): Promise<T> {
         let find: any = {};
         find[by] = id;

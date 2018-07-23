@@ -23,6 +23,16 @@ export class UserMongoModel extends BaseMongoModel<IUserMongoModel> {
             age: true,
             allowedServices: true,
             allowedRoutes: true
+        },
+        extendedWId: {
+            _id: true,
+            username: true,
+            password: true,
+            group: true,
+            country: true,
+            age: true,
+            allowedServices: true,
+            allowedRoutes: true
         }
     }
     resultsPerPage = 5;
@@ -44,6 +54,9 @@ export class UserMongoModel extends BaseMongoModel<IUserMongoModel> {
     };
 
     onPreSave(entity: IUserMongoModel) {
+        if(!entity.password)
+            return true;
+            
         entity.password = md5(entity.password + config.pswdSalt);
         return true;
     }

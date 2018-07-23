@@ -2,11 +2,15 @@ import * as pathToRegexp from 'path-to-regexp'
 import { Request } from 'express';
 import { AppServicePath } from '../models/AppServicePath';
 import { logger } from './AppLogger';
+import { userMongoModel } from '../../resource/user';
+import config from '../../configuration/general';
+import { AppTokenPayload } from '../models/AppToken';
 export class AppGuard {
 
     private _checkServices(services: AppServicePath[], controlMethod: string, controlUrl: string): boolean {
+        
         return services.some((service) => {
-            
+            console.log(service, controlMethod, controlUrl, service.method.toLowerCase() === controlMethod.toLowerCase(), service.path == controlUrl, pathToRegexp(service.path));
             if(service.method.toLowerCase() === controlMethod.toLowerCase()
                 && (service.path == controlUrl 
                     || pathToRegexp(service.path).test(controlUrl)
@@ -32,24 +36,7 @@ export class AppGuard {
             return false;
 
         if(!req.body.__djwt.scopes || !req.body.__djwt.scopes.services) {
-            let user = null;
-            // let user = await User.findOne({
-            //     _id: mongoose.Types.ObjectId(req.body.__djwt.sub)
-            // }).populate('group').exec();
-
-            if(!user)
-                return false;
-
-            req.body.__djwt.scopes.services = [...user.allowedServices, ...user.group.allowedServices];
-
-            if(this._checkServices(user.allowedServices, req.method, req.url)) {
-                return true;
-            }
-
-            if(this._checkServices(user.group.allowedServices, req.method, req.url)) {
-                return true;
-            }
-            
+            //There is no reason for the scopes to be unset
             return false;
         } else {
             return this._checkServices(req.body.__djwt.scopes.services, req.method, req.url);
@@ -61,24 +48,6 @@ export class AppGuard {
             return false;
 
         if(!req.body.__djwt.scopes || !req.body.__djwt.scopes.routes) {
-            let user = null;
-            // let user = await User.findOne({
-            //     _id: mongoose.Types.ObjectId(req.body.__djwt.sub)
-            // }).populate('group').exec();
-
-            if(!user)
-                return false;
-                
-            if(this._checkRoutes(user.allowedRoutes, req.body.route)) {
-                return true;
-            }
-
-            if(this._checkRoutes(user.group.allowedRoutes, req.body.route)) {
-                return true;
-            }
-
-            req.body.__djwt.scopes.routes = [...user.allowedRoutes, ...user.group.allowedRoutes];
-            
             return false;
         } else {
             return this._checkRoutes(req.body.__djwt.scopes.routes, req.body.route);
