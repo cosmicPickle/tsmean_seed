@@ -5,7 +5,7 @@ import { IUserMongoModel } from '../../../user';
 
 export class AuthMongoModel extends BaseMongoModel<IAuthMongoModel> {
     name = 'auth';
-    lookupField: '_id' = '_id';
+    lookupField: 'jwt' = 'jwt';
     projections = {
         default: {
             _id: false,
