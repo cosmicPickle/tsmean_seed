@@ -52,6 +52,60 @@ export class UserMongoModel extends BaseMongoModel<IUserMongoModel> {
             },
         })
     };
+    schemaValidation =  {
+        $jsonSchema: {
+            bsonType: "object",
+            required: ['username'],
+            properties: {
+                username: {
+                    bsonType: "string"
+                },
+                password: {
+                    bsonType: "string"
+                },
+                age: {
+                    bsonType: "int"
+                },
+                country: {
+                    bsonType: "string",
+                    minLength: 2,
+                    maxLength: 2
+                },
+                group: {
+                    bsonType: "objectId"
+                },
+                allowedServices: {
+                    bsonType: "array",
+                    items: {
+                        bsonType: "object",
+                        properties: {
+                            method: {
+                                bsonType: "string",
+                            },
+                            path: {
+                                bsonType: "string"
+                            }
+                        }
+                    }
+                },
+                allowedRoutes: {
+                    bsonType: "array",
+                    items: {
+                        bsonType: "string"
+                    }
+                }
+            }
+        }
+    }
+
+    schemaIndexes = [{
+        keys: {
+            username: 1,
+        },
+        options: {
+            unique: true
+        }
+    }];
 
     onPreSave(entity: IUserMongoModel) {
         if(!entity.password)

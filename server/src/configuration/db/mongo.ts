@@ -5,6 +5,13 @@ export const mongoConfig = {
     db: 'test_seed'
 }
 
-const connect: string = `mongodb://${mongoConfig.user}:${mongoConfig.password}@${mongoConfig.host}`;
+export const mongoTestingConfig = {
+    host: 'ds046677.mlab.com:46677/integration_testing',
+    user: 'integrationTester',
+    password: 'int123',
+    db: 'integration_testing'
+}
 
-export { connect };
+const connect: string = `mongodb://${mongoConfig.user}:${mongoConfig.password}@${mongoConfig.host}`;
+const connectTesting: string = `mongodb://${mongoTestingConfig.user}:${mongoTestingConfig.password}@${mongoTestingConfig.host}`;
+export { connect, connectTesting };

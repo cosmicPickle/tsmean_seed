@@ -1,9 +1,11 @@
 import { before } from "mocha";
 import { logger } from "./core/lib/AppLogger";
-before(async () => {
+import { mongo } from './core/lib/AppMongoDriver';
 
+before(async () => {
+   await mongo.connect();
 });
 
 after(() => {
-    
+    mongo.close();
 })

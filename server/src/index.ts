@@ -15,6 +15,11 @@ let start = async ()  => {
     const App = require('./App');
     app = App.default;
 
+    await mongo.setup({
+        createValidation: true,
+        createIndexes: true
+    });
+
     //Bootstrapping server
     http.createServer(app).listen(port, (err) => {
       if (err) {

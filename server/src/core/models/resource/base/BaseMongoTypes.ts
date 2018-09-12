@@ -44,6 +44,11 @@ export type BaseMongoLookup = Array<{
     $addField: any
 }>
 
+export type BaseMongoIndex = {
+    keys: Object,
+    options: Object
+}
+
 export interface InsertOneWriteOpResult<T> extends mongodb.InsertOneWriteOpResult {
     ops: T[];
 }

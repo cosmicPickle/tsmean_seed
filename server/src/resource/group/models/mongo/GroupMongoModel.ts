@@ -20,6 +20,5 @@ export class GroupMongoModel extends BaseMongoModel<IGroupMongoModel> {
         }
     }
 }
-
 export let groupMongoModel = new GroupMongoModel();
 export let Group = groupMongoModel.get();

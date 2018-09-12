@@ -75,6 +75,43 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
     enableSoftDelete = false;
     
     /**
+     * @property 
+     * @default null
+     * 
+     * The schema validation used that should be used by Mongo when 
+     * creating or updating an entry.
+     * 
+     * This property should be provided in a format according to the mongodb
+     * documentation about validation 
+     * 
+     * https://docs.mongodb.com/manual/core/schema-validation/
+     * 
+     * Note the validation will be automatically initialized by the AppMongoDriver 
+     * ONLY if the _setupConfig.createValidation is set to true
+     */
+    schemaValidation: any = null;
+
+    /**
+     * @property types.BaseMongoIndex
+     * @default null
+     * 
+     * An array of indexes and options for those indexes that should be 
+     * created for this collection in the AppMongoDriver setup phase
+     * 
+     * This property should be provided in a format according to the mongodb
+     * documentation about index creation where types.BaseMongoIndex.keys 
+     * and types.BaseMongoIndex.options are going to be used as first and 
+     * second argument to db.collection.createIndex() respectively
+     * 
+     * https://docs.mongodb.com/manual/indexes/
+     * https://docs.mongodb.com/manual/reference/method/db.collection.createIndex/
+     * 
+     * Note the indexes will be automatically initialized by the AppMongoDriver 
+     * ONLY if the _setupConfig.createIndexes is set to true
+    */
+    schemaIndexes: types.BaseMongoIndex[] = null;
+    
+    /**
      * @property mongodb.Collection<T>
      * 
      * The current collection
@@ -89,6 +126,9 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
      * @returns mongodb.Collection<T>
      * @throws Error if the model name is not defined 
      */
+    constructor() {
+        mongo.addModel(this);
+    }
     get(): mongodb.Collection<T> {
         if(this.collection)
             return this.collection;
@@ -183,6 +223,10 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
      * @throws MongoError if there was a problem with the create or relation validation
      */
     async create<B extends AppBaseBody>(entity: B): Promise<types.InsertOneWriteOpResult<T>> {
+        if(Object.keys(entity).length === 0 || entity.constructor !== Object) {
+            throw new Error(`Entity empty`);
+        }
+
         if(!this.collection) {
             throw new Error(`Collection is not set.`);
         }

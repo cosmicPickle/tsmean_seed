@@ -36,6 +36,5 @@ export class AuthMongoModel extends BaseMongoModel<IAuthMongoModel> {
         })
     };
 }
-
 export let authMongoModel = new AuthMongoModel();
 export let Auth = authMongoModel.get();
