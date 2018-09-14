@@ -19,6 +19,47 @@ export class GroupMongoModel extends BaseMongoModel<IGroupMongoModel> {
             allowedServices: true,
         }
     }
+
+    schemaValidation =  {
+        $jsonSchema: {
+            bsonType: "object",
+            required: ['name'],
+            properties: {
+                name: {
+                    bsonType: "string"
+                },
+                allowedServices: {
+                    bsonType: "array",
+                    items: {
+                        bsonType: "object",
+                        properties: {
+                            method: {
+                                bsonType: "string",
+                            },
+                            path: {
+                                bsonType: "string"
+                            }
+                        }
+                    }
+                },
+                allowedRoutes: {
+                    bsonType: "array",
+                    items: {
+                        bsonType: "string"
+                    }
+                }
+            }
+        }
+    }
+
+    schemaIndexes = [{
+        keys: {
+            name: 1,
+        },
+        options: {
+            unique: true
+        }
+    }];
 }
 export let groupMongoModel = new GroupMongoModel();
 export let Group = groupMongoModel.get();

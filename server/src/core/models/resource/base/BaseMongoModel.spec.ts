@@ -86,14 +86,36 @@ import { AppBaseBody } from './BaseValidationSchemaTypes';
 
 interface ITestMongoModel extends IBaseMongoModel {
     foo: number,
+    bar: string,
     rel: ITestRelMongoModel
 }
 
 interface ITestRelMongoModel extends IBaseMongoModel {
-    bar: string
+    baz: string
 }
 
-let bmm = new BaseMongoModel<ITestMongoModel>();
+class TestMongoModel extends BaseMongoModel<ITestMongoModel> {
+    name = 'testCollection';
+    checkRelationsValidity = false;
+    schemaValidation = {
+        $jsonSchema: {
+            bsonType: "object",
+            required: ['foo'],
+            properties: {
+                foo: {
+                    bsonType: "number"
+                },
+                bar: {
+                    bsonType: "string"
+                }
+            }
+        }
+    }
+}
+
+
+
+let bmm = new TestMongoModel();
 
 
 describe('Core: BaseMongoModel', () => {
@@ -101,6 +123,11 @@ describe('Core: BaseMongoModel', () => {
     before(async () => {
         await mongo.connect({
             testMode: true
+        });
+
+        await mongo.setup({
+            createValidation: true,
+            createIndexes: true
         });
     });
      
@@ -114,31 +141,120 @@ describe('Core: BaseMongoModel', () => {
 
      describe('Method: create<B extends AppBaseBody>(entity: B): Promise<types.InsertOneWriteOpResult<T>>', () => {
 
-        let body: AppBaseBody = {
-            foo: 123
-        };
-        let _validateRelationsStub = sinon.stub(bmm as any, "_validateRelations");
         
 
         it('should throw exception if collection is undefined.', async () => {
-            let promise = bmm.create(body);
+            let promise = bmm.create({
+                foo: 123
+            });
             await chai.expect(promise).to.be.rejectedWith(`Collection is not set.`);
         });
 
 
-        it('should throw if entity is empty', async() => {
-            (bmm as any).collection = mongo.db().collection('testCollection');
+        it('should throw if entity is empty', async () => {
+            bmm.get();
 
             let promise = bmm.create({});
             await chai.expect(promise).to.be.rejectedWith('Entity empty');
         });
 
-        it('should not perform validity check if no relations', async () => {
-            (bmm as any).collection = mongo.db().collection('testCollection');
+        it('should throw if entity is an array', async () => {
+            bmm.get();
+
+            let promise = bmm.create([]);
+            await chai.expect(promise).to.be.rejectedWith('Entity empty');
+        });
+
+        it('should throw if entity is null', async () => {
+            bmm.get();
+
+            let promise = bmm.create(null);
+            await chai.expect(promise).to.be.rejectedWith('Entity empty');
+        });
+
+        it('should throw if entity is undefined', async () => {
+            bmm.get();
+
+            let promise = bmm.create(undefined);
+            await chai.expect(promise).to.be.rejectedWith('Entity empty');
+        });
+
+        it('should throw if entity is a number', async () => {
+            bmm.get();
+
+            let promise = bmm.create(123);
+            await chai.expect(promise).to.be.rejectedWith('Entity empty');
+        });
+
+        it('should throw if entity is a boolean', async () => {
+            bmm.get();
+
+            let promise = bmm.create(true);
+            await chai.expect(promise).to.be.rejectedWith('Entity empty');
+        });
+
+
+        it('should throw if entity doesn\'t have foo set.', async () => {
+            bmm.get();
+            let promise = bmm.create({ bar: 123 });
+            await chai.expect(promise).to.be.rejectedWith('Document failed validation');
+        });
+
+        it('should throw if entity doesn\'t have foo is string.', async () => {
+            bmm.get();
+            let promise = bmm.create({ foo: "1234", bar: "123" });
+            await chai.expect(promise).to.be.rejectedWith('Document failed validation');
+        });
+
+        describe('read relationship validation tests', () => {
+
+            beforeEach(() => {
+                bmm.checkRelationsValidity = true;
+                bmm.relations = {
+                    rel: new types.BaseMongoRelation<ITestRelMongoModel>({
+                        from: 'testRelCollection',
+                        projections: {
+                            default: { },
+                            extended: { }
+                        },
+                    })
+                };
+            })
             
-            await bmm.create(body);
-            sinon.assert.notCalled(_validateRelationsStub as SinonStub);
-            _validateRelationsStub.reset();
+            it('should throw "Malformed relations configuration." if no relations', async () => {
+                bmm.checkRelationsValidity = true;
+                bmm.relations = {}
+
+                bmm.get();
+            
+                let promise = bmm.create({ foo: "1234", bar: "123" });
+                await chai.expect(promise).to.be.rejectedWith('Malformed relations configuration.');
+            });
+
+            it('should not perform validity check if checkRelationsValidity is false', async () => {
+                bmm.checkRelationsValidity = false;
+
+                bmm.get();
+                let _validateRelationsStub = sinon.stub(bmm as any, "_validateRelations");
+            
+                await bmm.create({
+                    foo: 123
+                });
+                sinon.assert.notCalled(_validateRelationsStub as SinonStub);
+                _validateRelationsStub.restore();
+            });
+
+
+            //TODO: test to check if an error is thrown when bmm.relations is in wrong format
+
+
+            it('should throw "Invalid relation" if _validateRelations fails', async () => {
+                bmm.get();
+                let _validateRelationsStub = sinon.stub(bmm as any, "_validateRelations").returns(false);
+                
+                let promise = bmm.create({ foo: 1234, bar: "123", rel: "123323" });
+                await chai.expect(promise).to.be.rejectedWith('Invalid relation');
+            })
         });
 
      })

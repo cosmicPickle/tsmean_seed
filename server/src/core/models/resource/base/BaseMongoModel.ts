@@ -223,7 +223,7 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
      * @throws MongoError if there was a problem with the create or relation validation
      */
     async create<B extends AppBaseBody>(entity: B): Promise<types.InsertOneWriteOpResult<T>> {
-        if(Object.keys(entity).length === 0 || entity.constructor !== Object) {
+        if(!entity || entity.constructor !== Object || Object.keys(entity).length === 0) {
             throw new Error(`Entity empty`);
         }
 
@@ -231,7 +231,16 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
             throw new Error(`Collection is not set.`);
         }
 
-        if(this.relations && this.checkRelationsValidity) {     
+
+        if(this.checkRelationsValidity) {   
+            
+            if (!this.relations || 
+                this.relations.constructor !== Object ||
+                Object.keys(this.relations).length <= 0
+            ) {
+                throw new Error(`Malformed relations configuration.`);
+            }
+            
             const validated = await this._validateRelations(entity);
 
             if(validated === false)

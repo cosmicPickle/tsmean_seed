@@ -35,6 +35,21 @@ export class AuthMongoModel extends BaseMongoModel<IAuthMongoModel> {
             },
         })
     };
+
+    schemaValidation = {
+        $jsonSchema: {
+            bsonType: "object",
+            required: ['user', 'jwt'],
+            properties: {
+                user: {
+                    bsonType: "objectId"
+                },
+                jwt: {
+                    bsonType: "string"
+                }
+            }
+        }
+    }
 }
 export let authMongoModel = new AuthMongoModel();
 export let Auth = authMongoModel.get();
