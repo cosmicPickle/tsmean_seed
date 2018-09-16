@@ -7,7 +7,7 @@
     "report": "chromium-browser coverage/index.html > /dev/null 2>&1 &",
     "test": "NODE_ENV=development npm run test:server",
     "test:server": "NODE_ENV=development nyc mocha -r ts-node/register --timeout=120000 '**/*.spec.ts' && npm run report",
-    "utest:server": "NODE_ENV=development mocha -r ts-node/register --timeout=120000",
+    "utest:server": "SET NODE_ENV=development & mocha -r ts-node/register --timeout=120000",
     "watch:server": "webpack --watch --mode=development --config server/webpack.config.js",
     "start": "concurrently \"npm run server:dev\" \"npm run watch:server\" ",
     "server:dev": "webpack --mode=development --config server/webpack.config.js && nodemon server/dist/index.js",

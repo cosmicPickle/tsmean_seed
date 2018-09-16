@@ -53,6 +53,11 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
      * that the model may have. It is used to perform a $lookup operation
      * on reading and when checking for valid relation ids when inserting
      * or updating a document
+     * 
+     * By default the foreignKey of the relation is set to _id. Should you 
+     * choose to create a relation by a different foreignKey, 
+     * the _validateRelations function will not try to convert the provided
+     * relations to ObjectId
      */
     relations: {
         [P in keyof T]?: types.BaseMongoRelation<any>
@@ -174,7 +179,7 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
     /**
      * @function readOne
      * 
-     * Reads a single entry from a collection based on an id. The default search field is id_. If a second parameter
+     * Reads a single entry from a collection based on an id. The default search field is _id. If a second parameter
      * is provided it will find by that field as well
      * 
      * @param id the id to find
@@ -241,17 +246,28 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
                 throw new Error(`Malformed relations configuration.`);
             }
             
-            const validated = await this._validateRelations(entity);
+            try {
+                const validated = await this._validateRelations(entity);
 
-            if(validated === false)
-                throw new Error(`Invalid relation.`)
+                if(validated === false)
+                    throw new Error(`Invalid relation.`);
 
-            entity = Object.assign({}, entity, validated);
+                entity = Object.assign({}, entity, validated);
+
+            } catch(e) {
+                throw new Error(`Invalid relation.`);
+            }
         }
 
-        if((this as any).onPreSave)
-            if((this as any).onPreSave(entity) === false)
-                throw new Error(`Pre-save operation failed`);
+        if((this as any).onPreSave) {
+            try {
+                let promise = await (this as any).onPreSave(entity);
+                if(!promise)
+                    throw new Error(`Pre-save operation failed.`);
+            } catch(e) {
+                throw new Error(`Pre-save operation failed.`);
+            }
+        }  
 
         return this.collection.insertOne(entity as any as T);
     }
@@ -266,7 +282,7 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
      * @param by keyof T @default '_id'
      * @returns Promise<mongodb.UpdateWriteOpResult>
      * @throws Error if this.collection is undefined
-     * @throws Error if the entity is empty
+     * @throws Error if the entity is emptyWW
      * @throws Error if any of the relation ids provided is invalid
      * @throws Error if pre-save hook fails
      * @throws MongoError if there was a problem with the update or relation validation
@@ -275,28 +291,52 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
         id: string | number | mongodb.ObjectId, 
         entity: B,
         by: keyof T = this.lookupField): Promise<mongodb.UpdateWriteOpResult>{
-        
+
+        if(!entity || entity.constructor !== Object || Object.keys(entity).length === 0) {
+            throw new Error(`Entity empty`);
+        }
+
+        if(id === undefined || id === null || id.constructor === Object || id instanceof Array) {
+            throw new Error(`Id not set or invalid`);
+        }
+
         if(!this.collection) {
             throw new Error(`Collection is not set.`);
         }
 
         id = this._parseObjectId(id);
 
-        if(this.relations && this.checkRelationsValidity) {     
-            const validated = await this._validateRelations(entity);
+        if(this.relations && this.checkRelationsValidity) {   
+            
+            if (!this.relations || 
+                this.relations.constructor !== Object ||
+                Object.keys(this.relations).length <= 0
+            ) {
+                throw new Error(`Malformed relations configuration.`);
+            }
+            
+            try {
+                const validated = await this._validateRelations(entity);
 
-            if(validated === false)
+                if(validated === false)
+                    throw new Error(`Invalid relation.`);
+
+                entity = Object.assign({}, entity, validated);
+
+            } catch(e) {
                 throw new Error(`Invalid relation.`);
-
-            entity = Object.assign({}, entity, validated);
+            }
         }
-  
-        if(Object.keys(entity).length == 0)
-            throw new Error(`Empty update.`);
 
-        if((this as any).onPreSave)
-            if((this as any).onPreSave(entity) === false)
-                throw new Error(`Pre-save operation failed`);
+        if((this as any).onPreSave) {
+            try {
+                let promise = await (this as any).onPreSave(entity);
+                if(!promise)
+                    throw new Error(`Pre-save operation failed.`);
+            } catch(e) {
+                throw new Error(`Pre-save operation failed.`);
+            }
+        }  
 
         let query: any = {};
 
@@ -897,12 +937,18 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
      * configuration 
      * 
      * @param entity B extends AppBaseBody
+     * @throws Error if entity is empty
+     * @throws Error if one or more of the provided Ids is empty
      * @returns { [key:string] : mongodb.ObjectId | mongodb.ObjectId[] } with the 
      * valid relations or false if any relation was invalid
      */
     private async _validateRelations<B extends AppBaseBody>(entity: B): 
         Promise<boolean | 
-        { [key:string] : mongodb.ObjectId | mongodb.ObjectId[] } > {
+        { [key:string] : mongodb.ObjectId | mongodb.ObjectId[] }> {
+
+        if(!entity || entity.constructor !== Object || Object.keys(entity).length === 0) {
+            throw new Error(`Entity empty`);
+        }
 
         let validated: { [key:string] : mongodb.ObjectId | mongodb.ObjectId[] } = {};
 
@@ -918,13 +964,26 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
                 if(rel.isArray) {
                     //We have a one-to-many relation. If entity[key] is not
                     //an array, we will say it is invalid
-                    if(entity[key as string] !instanceof Array)
+
+                    if(!(entity[key as string] instanceof Array))
                         return false;
                     
-                    const rels = (entity[key as string] as Array<string>).map((r) => {
-                        return new mongodb.ObjectId(r);
-                    });
+                    let rels = undefined;
 
+                    if(!rel.foreignField) {
+                        //This is a relation by _id so we need to make sure those are valid
+                        //ObjectIds
+                        try {
+                            rels = (entity[key as string] as Array<string>).map((r) => {
+                                return new mongodb.ObjectId(r);
+                            });
+                        } catch(e) {
+                            throw new Error(`Invalid relation ObjectId/s`);
+                        }
+                    } else {
+                        rels = entity[key as string] as Array<any>;
+                    }
+                    
                     let find: any = {};
                     find[foreignField] = { $in: rels };
                     const check = await mongo.db().collection(rel.from).find(find).toArray();
@@ -935,7 +994,22 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
                     validated[key as string] = rels;
             
                 } else {
-                    const objId = new mongodb.ObjectId(entity[key as string]);
+
+                    if(entity[key as string] instanceof Array)
+                        return false;
+
+                    let objId = undefined;
+                    if(!rel.foreignField) {
+                        //This is a relation by _id so we need to make sure this is a valid ObjectId
+                        try {
+                            objId = new mongodb.ObjectId(entity[key as string]);
+                        } catch(e) {
+                            throw new Error(`Invalid relation ObjectId/s`);
+                        }
+                    } else {
+                        objId = entity[key as string];
+                    }
+
                     let find: any = {};
                     find[foreignField] = objId;
 

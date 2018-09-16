@@ -5,6 +5,7 @@ import { IUserMongoModel } from './IUserMongoModel';
 import * as md5 from 'md5';
 import config from '../../../../configuration/general';
 import { IGroupMongoModel } from '../../../group';
+import { Q } from '../../../../core/lib/Q';
 
 export class UserMongoModel extends BaseMongoModel<IUserMongoModel> {
     name = 'users';
@@ -108,11 +109,15 @@ export class UserMongoModel extends BaseMongoModel<IUserMongoModel> {
     }];
 
     onPreSave(entity: IUserMongoModel) {
+        let defered = (new Q).defer();
+
         if(!entity.password)
-            return true;
+            defered.resolve(true);
             
         entity.password = md5(entity.password + config.pswdSalt);
-        return true;
+        defered.resolve(true);
+
+        return defered;
     }
 }
 
