@@ -378,6 +378,10 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
             throw new Error(`Collection is not set.`);
         }
 
+        if(id === undefined || id === null || id.constructor === Object || id instanceof Array) {
+            throw new Error(`Id not set or invalid`);
+        }
+
         id = this._parseObjectId(id);
 
         let query: any = {};
@@ -418,8 +422,13 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
         if(!this.enableSoftDelete) {
             throw new Error('This model does not support soft delete.');
         }
+        
         if(!this.collection) {
             throw new Error(`Collection is not set.`);
+        }
+
+        if(id === undefined || id === null || id.constructor === Object || id instanceof Array) {
+            throw new Error(`Id not set or invalid`);
         }
 
         id = this._parseObjectId(id);

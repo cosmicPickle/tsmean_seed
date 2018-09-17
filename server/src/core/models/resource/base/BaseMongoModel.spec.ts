@@ -21,12 +21,6 @@ import { AppBaseBody } from './BaseValidationSchemaTypes';
  * ---------------------------------
  * readOne
  * ---------------------------------
- * update
- * ---------------------------------
- * delete
- * ---------------------------------
- * restore
- * ---------------------------------
  * 
  * 
  * Private methods
@@ -744,7 +738,7 @@ describe('Core: BaseMongoModel', () => {
                 (bmm as any).onPreSave = null;
             });
 
-            it('should call onPreSave and insert the entry if onPreSave returns a truthy value', async () => {
+            it('should call onPreSave and update the entry if onPreSave returns a truthy value', async () => {
                 let body = {
                     foo: 123
                 };
@@ -759,6 +753,188 @@ describe('Core: BaseMongoModel', () => {
 
                 (bmm as any).onPreSave = null;
             });  
+
+            it('should not update the entry if it has a __deleted property & soft delete is enabled', async () => {
+                let body = {
+                    foo: 14423
+                }
+
+                bmm.checkRelationsValidity = false;
+                bmm.enableSoftDelete = true;
+                let setupResult = await bmm.get().updateOne({ _id: updateObjectId}, {
+                    $set: {
+                        __deleted: true
+                    }
+                });
+                chai.expect(setupResult.modifiedCount).to.eql(1);
+
+                let result = await bmm.update(updateObjectId, body);
+                chai.expect(result.modifiedCount).to.eql(0);
+            });
+
+            it('should update the entry if it has a __deleted property & soft delete is disabled', async () => {
+                let body = {
+                    foo: 14423
+                }
+
+                bmm.checkRelationsValidity = false;
+                bmm.enableSoftDelete = false;
+                let setupResult = await bmm.get().updateOne({ _id: updateObjectId}, {
+                    $set: {
+                        __deleted: true
+                    }
+                });
+
+                let result = await bmm.update(updateObjectId, body);
+                chai.expect(result.modifiedCount).to.eql(1);
+            });
         });
     });
+
+    describe('Method: public delete<B extends AppBaseBody>(id: string | number | mongodb.ObjectId, by: keyof T = this.lookupField: Promise<mongodb.DeleteWriteOpResultObject> ', () => {
+
+        let deleteObjectId = null;
+        beforeEach(async () => {
+            bmm.get();
+            bmm.checkRelationsValidity = false;
+
+            let result = await bmm.get().insertOne({
+                foo: 123
+            });
+
+            deleteObjectId = result.insertedId;
+        });
+
+        afterEach(async () => {
+            await bmm.get().deleteOne({
+                _id: deleteObjectId
+            })
+        });
+
+        it('should throw exception if collection is undefined.', async () => {
+            (bmm as any).collection = undefined;
+
+            let promise = bmm.delete(deleteObjectId);
+            await chai.expect(promise).to.be.rejectedWith(`Collection is not set.`);
+        });
+
+        it('should throw if id is null', async () => {
+            bmm.get();
+            await chai.expect((bmm as any).delete(null)).to.be.rejectedWith('Id not set or invalid');
+        });
+
+        it('should throw if id is undefined', async () => {
+            bmm.get();
+            await chai.expect((bmm as any).delete(undefined)).to.be.rejectedWith('Id not set or invalid');
+        });
+
+        it('should throw if id is Object', async () => {
+            bmm.get();
+            await chai.expect((bmm as any).delete({ a: 123 })).to.be.rejectedWith('Id not set or invalid');
+        });
+
+        it('should throw if id is Array', async () => {
+            bmm.get();
+            await chai.expect((bmm as any).delete([1, 22222, 'str'])).to.be.rejectedWith('Id not set or invalid');
+        });
+
+        it('should return deletedCount=0 if the id is not found', async () => {
+            bmm.get();
+            let res = await bmm.delete(new mongodb.ObjectID(123));
+            chai.expect(res.deletedCount).to.be.eql(0);
+        });
+
+        it('should delete the entry from DB if enableSoftDelete is set to false and id is found', async () => {
+            bmm.get();
+            bmm.enableSoftDelete = false;
+            let res = await bmm.delete(deleteObjectId);
+            chai.expect(res.deletedCount).to.be.eql(1);
+
+            let check = await bmm.get().findOne({_id: deleteObjectId});
+            chai.expect(check).to.be.null;
+        });
+
+        it('should return deletedCount=1 & add __deleted property to the entry if enableSoftDelete is set to true and id is found', async () => {
+            bmm.get();
+            bmm.enableSoftDelete = true;
+            let res = await bmm.delete(deleteObjectId);
+            chai.expect(res.deletedCount).to.be.eql(1);
+
+            let check = await bmm.get().findOne({_id: deleteObjectId});
+            chai.expect((check as any).__deleted).to.be.true;
+        });
+
+    });
+
+    describe('Method: public restore(id: string | number | mongodb.ObjectId, by: keyof T = this.lookupField): Promise<mongodb.UpdateWriteOpResult>', () => {
+
+        let restoreObjectId = null;
+        before(async () => {
+            bmm.get();
+            bmm.checkRelationsValidity = false;
+
+            let result = await bmm.get().insertOne({
+                foo: 123
+            });
+            
+            restoreObjectId = result.insertedId;
+        })
+
+        beforeEach(async () => {
+            bmm.enableSoftDelete = true;
+
+            let result = await bmm.get().updateOne({ _id: restoreObjectId}, { $set: {
+                __deleted: true
+            }});
+        });
+
+        it('should throw enableSoftDelete=false', async () => {
+            bmm.get();
+            bmm.enableSoftDelete = false;
+            await chai.expect((bmm as any).restore(restoreObjectId)).to.be.rejectedWith('This model does not support soft delete.');
+        });
+
+        it('should throw exception if collection is undefined.', async () => {
+            (bmm as any).collection = undefined;
+
+            let promise = bmm.restore(restoreObjectId);
+            await chai.expect(promise).to.be.rejectedWith(`Collection is not set.`);
+        });
+
+        it('should throw if id is null', async () => {
+            bmm.get();
+            await chai.expect((bmm as any).restore(null)).to.be.rejectedWith('Id not set or invalid');
+        });
+
+        it('should throw if id is undefined', async () => {
+            bmm.get();
+            await chai.expect((bmm as any).restore(undefined)).to.be.rejectedWith('Id not set or invalid');
+        });
+
+        it('should throw if id is Object', async () => {
+            bmm.get();
+            await chai.expect((bmm as any).restore({ a: 123 })).to.be.rejectedWith('Id not set or invalid');
+        });
+
+        it('should throw if id is Array', async () => {
+            bmm.get();
+            await chai.expect((bmm as any).restore([1, 22222, 'str'])).to.be.rejectedWith('Id not set or invalid');
+        });
+
+        it('should return modifiedCount=0 if the id is not found', async () => {
+            bmm.get();
+            let res = await bmm.restore(new mongodb.ObjectID(123));
+            chai.expect(res.modifiedCount).to.be.eql(0);
+        });
+
+        it('should return modifiedCount=1 & set __deleted property of the entry to false if enableSoftDelete=true and id is found', async () => {
+            bmm.get();
+            let res = await bmm.restore(restoreObjectId);
+            chai.expect(res.modifiedCount).to.be.eql(1);
+
+            let check = await bmm.get().findOne({_id: restoreObjectId});
+            chai.expect((check as any).__deleted).to.be.false;
+        });
+
+    })
 });
