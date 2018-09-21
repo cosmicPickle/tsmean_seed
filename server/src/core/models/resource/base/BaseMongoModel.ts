@@ -159,6 +159,7 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
      * If not set the profile of the main model is taken.
      * @returns Promise<T[]>
      * @throws Error if this.collection is undefined
+     * @throws Error if req.query is undefined
      * @throws MongoError if there was a problem with the read
      */
     read<R extends AppBaseRequest>(
@@ -168,6 +169,10 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
     ): Promise<T[]> {
         if(!this.collection) {
             throw new Error(`Collection is not set.`);
+        }
+        
+        if(!this._isNonEmptyObject(req) || !this._isNonEmptyObject(req.query)) {
+            throw new Error(`Query empty.`);
         }
 
         if(this.relations && Object.keys(this.relations).length) 
@@ -228,7 +233,7 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
      * @throws MongoError if there was a problem with the create or relation validation
      */
     async create<B extends AppBaseBody>(entity: B): Promise<types.InsertOneWriteOpResult<T>> {
-        if(!entity || entity.constructor !== Object || Object.keys(entity).length === 0) {
+        if(!this._isNonEmptyObject(entity)) {
             throw new Error(`Entity empty`);
         }
 
@@ -292,7 +297,7 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
         entity: B,
         by: keyof T = this.lookupField): Promise<mongodb.UpdateWriteOpResult>{
 
-        if(!entity || entity.constructor !== Object || Object.keys(entity).length === 0) {
+        if(!this._isNonEmptyObject(entity)) {
             throw new Error(`Entity empty`);
         }
 
@@ -713,6 +718,10 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
             }
         }
         return projectionArr;
+    }
+
+    private _isNonEmptyObject(val: any) {
+        return val && val.constructor === Object && Object.keys(val).length !== 0;
     }
 
     private _parseObjectId(id: string | number | mongodb.ObjectId ) : string | number | mongodb.ObjectId {

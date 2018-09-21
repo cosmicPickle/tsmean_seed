@@ -69,8 +69,6 @@ import { AppBaseBody } from './BaseValidationSchemaTypes';
  * _parseFilter
  *  with typeof filter Array
  * -------------------------
- * _parseObjectId
- * 
  */
 
 
@@ -103,7 +101,12 @@ class TestMongoModel extends BaseMongoModel<ITestMongoModel> {
     }
 }
 
+class TestRelMongoModel extends BaseMongoModel<ITestRelMongoModel> {
+    name = 'testRelCollection';
+}
+
 let bmm = new TestMongoModel();
+let relModel = new TestRelMongoModel();
 
 
 describe('Core: BaseMongoModel', () => {
@@ -201,6 +204,11 @@ describe('Core: BaseMongoModel', () => {
                         },
                     })
                 };
+            });
+
+            after(() => {
+                bmm.checkRelationsValidity = false;
+                bmm.relations = null
             })
             
             it('should throw "Malformed relations configuration." if no relations', async () => {
@@ -791,6 +799,35 @@ describe('Core: BaseMongoModel', () => {
         });
     });
 
+    describe('Method: private _parseObjectId(id: string | number | mongodb.ObjectId ) : string | number | mongodb.ObjectId', () => {
+
+        it('should return the id directly if it is not a valid objectId.', () => {
+            let id = 'dddd';
+
+            let result = (bmm as any)._parseObjectId(id);
+
+            chai.expect(result).to.eq(id);
+        });
+
+        it('should return the id if it is a valid objectId but the parsed one doesn\'t equal the original', () => {
+            let id = 1;
+
+            let isValidSpy = sinon.spy(mongodb.ObjectID, 'isValid');
+            let result = (bmm as any)._parseObjectId(id);
+            chai.expect(isValidSpy.getCall(0).returnValue).to.be.true;
+            chai.expect(result).to.eq(id);            
+        });
+
+        it('should return the parsed objectId if id is valid objectId and is equal to the parsed one', () => {
+            let id = "5b56dbd107efc974f5f0dcab";
+
+            let result = (bmm as any)._parseObjectId(id);
+
+            chai.expect(result).to.not.be.eq(id);
+            chai.expect(result + '').to.be.eq(id);
+        });
+    });
+
     describe('Method: public delete<B extends AppBaseBody>(id: string | number | mongodb.ObjectId, by: keyof T = this.lookupField: Promise<mongodb.DeleteWriteOpResultObject> ', () => {
 
         let deleteObjectId = null;
@@ -888,6 +925,12 @@ describe('Core: BaseMongoModel', () => {
             }});
         });
 
+        after(async () => {
+            bmm.enableSoftDelete = false;
+
+            bmm.get().deleteOne({ _id: restoreObjectId});
+        })
+
         it('should throw enableSoftDelete=false', async () => {
             bmm.get();
             bmm.enableSoftDelete = false;
@@ -936,5 +979,87 @@ describe('Core: BaseMongoModel', () => {
             chai.expect((check as any).__deleted).to.be.false;
         });
 
+    });
+
+    describe('Method: public read<R extends AppBaseRequest>(req: R, projection: string = \'default\', relationProjections?: {[P in keyof T]? : string}): Promise<T[]>', () => {
+      
+        let relIds;
+        let ids;
+
+        before(async () => {
+            let col = bmm.get();
+            let relCol = relModel.get();
+
+            let insertRels = await relCol.insertMany([{
+                    baz: 'tetetete'
+                },
+                {
+                    baz: 'this'
+                },
+                {
+                    baz: 'nope'
+            }]);
+
+            relIds = insertRels.insertedIds;
+
+            let insertResult = await col.insertMany([{
+                    foo: 123,
+                    bar: "123",
+                    rel: relIds[0]
+                }, {
+                    foo: 456,
+                    bar: "456",
+                    rel: relIds[1]
+                }, {
+                    foo: 789,
+                    bar: "789",
+                    rel: relIds[2]
+            }]);
+            
+            ids = insertResult.insertedIds;
+        });
+
+        beforeEach(async () => {
+            bmm.checkRelationsValidity = true;
+            bmm.projections = {
+                default: {
+                    foo: true
+                },
+                extended: {
+                    foo: true,
+                    bar: true
+                }
+            }
+            bmm.relations = {
+                rel: new types.BaseMongoRelation<ITestRelMongoModel>({
+                    from: 'testRelCollection',
+                    projections: {
+                        default: { 
+                            _id: false,
+                            baz:true
+                        },
+                        extended: { 
+                            baz: true
+                        }
+                    },
+                })
+            };
+        });
+
+        after(async () => {
+            bmm.checkRelationsValidity = false;
+            bmm.projections = null;
+            bmm.relations = null;
+
+            Object.keys(ids).forEach((objID) => {
+                bmm.get().deleteOne({ _id: objID});
+            });
+
+            Object.keys(relIds).forEach((objID) => {
+                bmm.get().deleteOne({ _id: objID});
+            })
+        });
+
+        //it('should return ')
     })
 });
