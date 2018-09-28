@@ -162,7 +162,7 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
      * @throws Error if req.query is undefined
      * @throws MongoError if there was a problem with the read
      */
-    read<R extends AppBaseRequest>(
+    async read<R extends AppBaseRequest>(
         req: R, 
         projection: string = 'default', 
         relationProjections?: {[P in keyof T]? : string}
@@ -197,7 +197,7 @@ export class BaseMongoModel<T extends IBaseMongoModel> implements types.BaseMong
      * @throws Error if this.collection is undefined
      * @throws MongoError if there was a problem with the read
      */
-    readOne(
+    async readOne(
         id: string | number | mongodb.ObjectId, 
         by: keyof T = this.lookupField, 
         projection: string = 'default', 

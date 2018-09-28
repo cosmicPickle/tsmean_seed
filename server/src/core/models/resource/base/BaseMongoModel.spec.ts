@@ -10,7 +10,7 @@ import { mongo } from './../../../lib/AppMongoDriver';
 import { BaseMongoModel } from './BaseMongoModel';
 import { IBaseMongoModel } from './IBaseMongoModel';
 import * as types from './BaseMongoTypes';
-import { AppBaseBody } from './BaseValidationSchemaTypes';
+import { AppBaseBody, AppBaseRequest } from './BaseValidationSchemaTypes';
 
 /**
  * Tests
@@ -989,8 +989,17 @@ describe('Core: BaseMongoModel', () => {
         before(async () => {
             let col = bmm.get();
             let relCol = relModel.get();
-
-            let insertRels = await relCol.insertMany([{
+            let entries: Partial<ITestMongoModel>[] = [{
+                    foo: 123,
+                    bar: "123",
+                }, {
+                    foo: 456,
+                    bar: "456",
+                }, {
+                    foo: 789,
+                    bar: "789",
+            }];
+            let relEntries = [{
                     baz: 'tetetete'
                 },
                 {
@@ -998,23 +1007,20 @@ describe('Core: BaseMongoModel', () => {
                 },
                 {
                     baz: 'nope'
-            }]);
+            }];
+
+
+            await col.deleteMany({ $or : entries });
+            await relCol.deleteMany({ $or : relEntries });
+
+            let insertRels = await relCol.insertMany(relEntries);
 
             relIds = insertRels.insertedIds;
+            entries.forEach((val, id) => {
+                entries[id].rel = relIds[id];
+            })
 
-            let insertResult = await col.insertMany([{
-                    foo: 123,
-                    bar: "123",
-                    rel: relIds[0]
-                }, {
-                    foo: 456,
-                    bar: "456",
-                    rel: relIds[1]
-                }, {
-                    foo: 789,
-                    bar: "789",
-                    rel: relIds[2]
-            }]);
+            let insertResult = await col.insertMany(entries);
             
             ids = insertResult.insertedIds;
         });
@@ -1047,19 +1053,131 @@ describe('Core: BaseMongoModel', () => {
         });
 
         after(async () => {
+            bmm.enableSoftDelete = false;
             bmm.checkRelationsValidity = false;
             bmm.projections = null;
             bmm.relations = null;
 
-            Object.keys(ids).forEach((objID) => {
-                bmm.get().deleteOne({ _id: objID});
-            });
-
-            Object.keys(relIds).forEach((objID) => {
-                bmm.get().deleteOne({ _id: objID});
-            })
+            let keys = Object.keys(ids);
+            let i;
+            for(i = 0; i < keys.length; i++) {
+                await bmm.get().deleteOne({ _id: ids[keys[i]] });
+            }
+            keys = Object.keys(relIds);
+            for(i = 0; i < keys.length; i++) {
+                let r = await relModel.get().deleteOne({ _id: relIds[keys[i]] });             
+            }
         });
 
-        //it('should return ')
+        it('should throw if collection is empty.', async () => {
+            (bmm as any).collection = null;
+            let promise = bmm.read({} as AppBaseRequest);
+
+            await chai.expect(promise).to.be.rejectedWith(`Collection is not set.`);
+        });
+
+        it('should throw if req is empty', async () => {
+            bmm.get();
+
+            let promise = (bmm as any).read();
+            await chai.expect(promise).to.be.rejectedWith(`Query empty.`);
+        });
+
+        it('should throw if req is an array', async () => {
+            bmm.get();
+
+            let promise = (bmm as any).read([]);
+            await chai.expect(promise).to.be.rejectedWith(`Query empty.`);
+        });
+
+        it('should throw if req is null', async () => {
+            bmm.get();
+
+            let promise = (bmm as any).read(null);
+            await chai.expect(promise).to.be.rejectedWith(`Query empty.`);
+        });
+
+        it('should throw if req is undefined', async () => {
+            bmm.get();
+
+            let promise = (bmm as any).read(undefined);
+            await chai.expect(promise).to.be.rejectedWith(`Query empty.`);
+        });
+
+        it('should throw if req is a number', async () => {
+            bmm.get();
+
+            let promise = (bmm as any).read(123);
+            await chai.expect(promise).to.be.rejectedWith(`Query empty.`);
+        });
+
+        it('should throw if req is a boolean', async () => {
+            bmm.get();
+
+            let promise = (bmm as any).read(true);
+            await chai.expect(promise).to.be.rejectedWith(`Query empty.`);
+        });
+
+        it('should throw if req.query is empty', async () => {
+            bmm.get();
+
+            let promise = (bmm as any).read({});
+            await chai.expect(promise).to.be.rejectedWith(`Query empty.`);
+        });
+
+        it('should throw if req.query is an array', async () => {
+            bmm.get();
+
+            let promise = (bmm as any).read({ query: []});
+            await chai.expect(promise).to.be.rejectedWith(`Query empty.`);
+        });
+
+        it('should throw if req.query is null', async () => {
+            bmm.get();
+
+            let promise = (bmm as any).read({ query: null});
+            await chai.expect(promise).to.be.rejectedWith(`Query empty.`);
+        });
+
+        it('should throw if req.query is undefined', async () => {
+            bmm.get();
+
+            let promise = (bmm as any).read({ query: undefined });
+            await chai.expect(promise).to.be.rejectedWith(`Query empty.`);
+        });
+
+        it('should throw if req.query is a number', async () => {
+            bmm.get();
+
+            let promise = (bmm as any).read({ query: 123 });
+            await chai.expect(promise).to.be.rejectedWith(`Query empty.`);
+        });
+
+        it('should throw if req.query is a boolean', async () => {
+            bmm.get();
+
+            let promise = (bmm as any).read({ query: true });
+            await chai.expect(promise).to.be.rejectedWith(`Query empty.`);
+        });
+
+        describe("Test without relations", () => {
+
+            before(() => {
+                bmm.relations = undefined;
+                bmm.filters = undefined;
+            });
+
+            it('should return entry with specific foo: 123 if foo is set in bmm.filters', async () => {
+                bmm.get();
+                bmm.filters = ['foo'];
+
+                let result = await bmm.read({ query: {
+                    foo: 123
+                }} as any);
+
+                chai.expect(result.length).to.be.eq(1);
+                chai.expect(result[0]._id.equals(ids[0])).to.true;
+            })
+        })
     })
 });
